@@ -1,0 +1,19 @@
+{
+  "name": "com.uayten.unityblenderlike",
+  "displayName": "Unity Blender Like",
+  "version": "0.1.0",
+  "unity": "2021.3",
+  "description": "Makes the Unity Scene view feel like Blender: modal rotation with R that follows the mouse around the pivot, with X / Y / Z axis locks and typed angles, and Blender's numpad views, matching models exported from Blender. Editor-only, installable per machine without touching the project.",
+  "author": {
+    "name": "uayten"
+  },
+  "keywords": [
+    "blender",
+    "scene view",
+    "shortcuts",
+    "hotkeys",
+    "numpad",
+    "rotate",
+    "editor tools"
+  ]
+}
