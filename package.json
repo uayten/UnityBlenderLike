@@ -1,9 +1,9 @@
 {
   "name": "com.uayten.unityblenderlike",
   "displayName": "Unity Blender Like",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "unity": "2021.3",
-  "description": "Makes the Unity Scene view feel like Blender: modal G / R / S that follow the mouse, with X / Y / Z axis locks and typed values, Blender's object keys (hide, clear transforms, duplicate and move, parent, select all), Blender's numpad views with local view and Auto Perspective, and a Transform Inspector that shows Blender's Z-up values, matching models exported from Blender. Editor-only, installable per machine without touching the project.",
+  "description": "Makes the Unity Scene view feel like Blender: modal G / R / S that follow the mouse, with X / Y / Z axis locks and typed values, Blender's object keys (hide, clear transforms, duplicate and move, parent, select all), Blender's numpad views with local view and Auto Perspective, a Transform Inspector that shows Blender's Z-up values, and Outliner-style dragging over the Hierarchy's expand arrows, matching models exported from Blender. Editor-only, installable per machine without touching the project.",
   "author": {
     "name": "uayten"
   },
@@ -15,6 +15,7 @@
     "numpad",
     "z up",
     "transform",
+    "hierarchy",
     "move",
     "rotate",
     "scale",

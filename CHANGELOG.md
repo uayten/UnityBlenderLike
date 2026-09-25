@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.0] - 2026-09-25
+
+### Added
+
+- Hierarchy: press an expand arrow and drag, and every item the mouse passes over opens or closes with it, like Blender's Outliner.
+
 ## [0.3.0] - 2026-09-25
 
 ### Added

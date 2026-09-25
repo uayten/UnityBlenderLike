@@ -6,6 +6,7 @@ Makes the Unity Scene view feel like Blender, as an editor-only package you can 
 - **Axis locks and typed values**: X / Y / Z lock an axis (again for local), type `90` for an exact value, Ctrl snaps, G / R / S switch mode without confirming, click to confirm, right click to cancel
 - **Blender's object keys**: H / Shift+H / Alt+H hide and reveal, Alt+G / Alt+R / Alt+S clear transforms, Shift+D duplicates and moves, Ctrl+P / Alt+P parent and unparent, A / Alt+A select all and none
 - **Numpad views**: 1 / 3 / 7 for front, right and top, Ctrl for the opposite side, 5 to toggle orthographic, `.` to frame the selection, / for local view, and Auto Perspective when orbiting
+- **Drag over Hierarchy arrows**: press an expand arrow and drag up or down, and every item you pass opens (or closes) too, like Blender's Outliner
 - **Z-up Transform Inspector**: Location, Rotation and Scale show and edit the values Blender's N panel shows, with Z up and Blender's XYZ Euler, while the object keeps Unity's own values underneath
 - **Blender's axes**: views and axis locks match models exported from Blender with the default FBX settings, so Numpad 7 shows what Blender's top view shows and R Z turns around the vertical
 - **Nothing in the project**: no scene, asset or setting changes, and it can live outside version control, so your teammates keep stock Unity
@@ -19,6 +20,7 @@ Makes the Unity Scene view feel like Blender, as an editor-only package you can 
 - [Object shortcuts](#object-shortcuts)
 - [Numpad views](#numpad-views)
 - [Z-up Transform Inspector](#z-up-transform-inspector)
+- [Hierarchy](#hierarchy)
 - [Settings](#settings)
 - [Conflicts with existing shortcuts](#conflicts-with-existing-shortcuts)
 - [How it works](#how-it-works)
@@ -161,6 +163,16 @@ Values match Blender's N panel for objects whose FBX brings no axis rotation of 
 
 RectTransform (UI) keeps Unity's Inspector.
 
+## Hierarchy
+
+Press an item's expand arrow in the Hierarchy and drag up or down: every item the mouse passes over gets the same state as the first one, so one stroke opens (or closes) a whole column of arrows, like Blender's Outliner. Items without children are skipped.
+
+Opening an item pushes the rows below it down, so a drag downward runs into the children it just revealed, as in Blender. To open a list of siblings in one go, start at the bottom one and drag up.
+
+Alt+click keeps Unity's own behavior (expand or collapse everything under the item).
+
+This works with the Hierarchy window of Unity 6 (the one built with UI Toolkit). It finds that window's internals by name, so on Unity versions with the older Hierarchy nothing changes there.
+
 ## Settings
 
 **Edit → Preferences → Blender Like**:
@@ -194,6 +206,7 @@ Clear their bindings in **Edit → Shortcuts** (the package covers both with H a
 - While a modal transform runs, a handler placed ahead of the Shortcut Manager reads the keys, so the modal gets them before any other shortcut. It's removed when the transform ends.
 - Confirming puts every object back where it started, records it for Undo, then applies the final transform, so the whole drag undoes in one step. Shift+D merges the duplicate into that same step.
 - Auto Perspective reads the Scene view's view animation (internal) to tell it apart from an orbit.
+- The Hierarchy drag listens to the Hierarchy window's pointer events before its rows see them, and opens or closes items through the Hierarchy view's expand and collapse methods.
 - The Z-up Transform Inspector is a custom Inspector for Transform. It converts the values on the way in and out, and draws Unity's own Transform Inspector when it's off.
 
 ## Compatibility
@@ -204,6 +217,7 @@ Two features read internal Unity fields. If a future version removes them:
 
 - `EditorApplication.globalEventHandler`: moving the mouse and confirming or cancelling with a click still work, but the keys during a modal transform (axis locks, typed values, Enter, Esc) go to Unity's own shortcuts instead.
 - The Scene view's view animation: Auto Perspective waits a fixed second after a view key before it starts watching for orbits.
+- The Hierarchy window's row items (`Unity.Hierarchy.HierarchyViewItem`): if they change, dragging over the arrows stops doing anything and a plain click works as in stock Unity.
 - `UnityEditor.TransformInspector`, Unity's own Transform Inspector: with the Z-up Inspector off, the Transform shows its raw fields instead (rotation as a quaternion).
 
 ## Why
