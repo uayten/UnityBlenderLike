@@ -2,9 +2,10 @@
 
 Makes the Unity Scene view feel like Blender, as an editor-only package you can keep to yourself in a shared project:
 
-- **Modal rotation with R**: the selection follows the mouse around the pivot, full turns included, instead of Unity's gizmo that stops following once you circle the pivot
-- **Axis locks and typed angles**: X / Y / Z lock an axis (again for local), type `90` for an exact angle, Ctrl snaps to 5°, click to confirm, right click to cancel
-- **Numpad views**: 1 / 3 / 7 for front, right and top, Ctrl for the opposite side, 5 to toggle orthographic
+- **Modal G / R / S**: move, rotate and scale follow the mouse until you click, and rotation follows the cursor around the pivot, full turns included, instead of Unity's gizmo that stops following once you circle the pivot
+- **Axis locks and typed values**: X / Y / Z lock an axis (again for local), type `90` for an exact value, Ctrl snaps, G / R / S switch mode without confirming, click to confirm, right click to cancel
+- **Blender's object keys**: H / Shift+H / Alt+H hide and reveal, Alt+G / Alt+R / Alt+S clear transforms, Shift+D duplicates and moves, Ctrl+P / Alt+P parent and unparent, A / Alt+A select all and none
+- **Numpad views**: 1 / 3 / 7 for front, right and top, Ctrl for the opposite side, 5 to toggle orthographic, `.` to frame the selection, / for local view, and Auto Perspective when orbiting
 - **Blender's axes**: views and axis locks match models exported from Blender with the default FBX settings, so Numpad 7 shows what Blender's top view shows and R Z turns around the vertical
 - **Nothing in the project**: no scene, asset or setting changes, and it can live outside version control, so your teammates keep stock Unity
 
@@ -13,9 +14,10 @@ Makes the Unity Scene view feel like Blender, as an editor-only package you can 
 - [Install](#install)
 - [Uninstall](#uninstall)
 - [Shortcuts](#shortcuts)
-- [Modal rotation](#modal-rotation)
+- [Modal transforms](#modal-transforms)
+- [Object shortcuts](#object-shortcuts)
 - [Numpad views](#numpad-views)
-- [Axes](#axes)
+- [Settings](#settings)
 - [Conflicts with existing shortcuts](#conflicts-with-existing-shortcuts)
 - [How it works](#how-it-works)
 - [Compatibility](#compatibility)
@@ -58,36 +60,64 @@ Delete the `Assets/UnityBlenderLike` folder, or remove the package in the Packag
 
 ## Shortcuts
 
-All shortcuts work with the Scene view focused and are listed under **Blender Like** in **Edit → Shortcuts**, where they can be rebound.
+All shortcuts work with the Scene view focused and are listed under **Blender Like** in **Edit → Shortcuts**, where they can be rebound. In other windows, the same keys keep doing what Unity does there.
 
-| Key | Action |
-|---|---|
-| R | [Modal rotation](#modal-rotation) of the selection |
-| Numpad 1 / Ctrl + Numpad 1 | Front / back view |
-| Numpad 3 / Ctrl + Numpad 3 | Right / left view |
-| Numpad 7 / Ctrl + Numpad 7 | Top / bottom view |
-| Numpad 5 | Toggle orthographic / perspective |
+| Key | Action | Unity default it overrides in the Scene view |
+|---|---|---|
+| G / R / S | [Modal move / rotate / scale](#modal-transforms) | R: Scale tool |
+| H / Shift+H / Alt+H | [Hide selected / hide unselected / reveal all](#object-shortcuts) | H: toggle visibility, Shift+H: toggle isolation |
+| Alt+G / Alt+R / Alt+S | Clear location / rotation / scale | |
+| Shift+D | Duplicate and move | |
+| Ctrl+P / Alt+P | Parent to active / clear parent | Ctrl+P: Play |
+| A / Alt+A | Select all / select none | |
+| Numpad 1 / Ctrl + Numpad 1 | Front / back view | |
+| Numpad 3 / Ctrl + Numpad 3 | Right / left view | |
+| Numpad 7 / Ctrl + Numpad 7 | Top / bottom view | |
+| Numpad 5 | Toggle orthographic / perspective | |
+| Numpad . | Frame selected | |
+| Numpad / | Local view | |
 
-On macOS, Ctrl is Cmd (Unity's Action modifier).
+W and E keep Unity's move and rotate gizmos. On macOS, Ctrl is Cmd (Unity's Action modifier).
 
-## Modal rotation
+## Modal transforms
 
-Select something, point at the Scene view and press R:
+Select something, point at the Scene view and press G, R or S:
 
 | Input | Effect |
 |---|---|
-| Move the mouse | Rotate around the view axis, following the cursor angle around the pivot, full turns included |
+| Move the mouse | Move in the view plane, rotate around the view axis following the cursor angle around the pivot (full turns included), or scale by the distance from the pivot |
 | X / Y / Z | Lock to the global axis; press again for the local axis (of the active object), again to unlock. A line through the pivot, in Unity's color for the axis it runs along, shows the lock |
-| Digits, `.`, `-`, Backspace | Type an exact angle in degrees |
-| Ctrl | Snap to 5° steps |
+| Digits, `.`, `-`, Backspace | Type an exact value: meters for move (along X when no axis is locked), degrees for rotate, factor for scale |
+| G / R / S | Switch to another transform, keeping what the previous one did |
+| Ctrl | Snap: Unity's grid snap step for move, 5° for rotate, 0.1 for scale |
 | Left click / Enter | Confirm, as one undo step |
 | Right click / Esc | Cancel and go back to where it started |
 
-The pivot follows Unity's **Pivot / Center** toggle in the toolbar. With Center, several objects swing around their common center; with Pivot, each turns around its own origin. A child whose parent is also selected turns once, with its parent.
+The pivot follows Unity's **Pivot / Center** toggle in the toolbar. With Center, several objects swing around and scale from their common center; with Pivot, each turns and grows around its own origin. A child whose parent is also selected moves once, with its parent.
 
-While rotating, Unity's move / rotate / scale gizmo hides, and every other key is held back, so X doesn't delete and digits don't switch views. The current angle and axis show at the bottom of the Scene view.
+Unity can't scale an object along an arbitrary world axis without shearing it, so a scale locked to an axis acts on the object's own axis that runs closest to it.
 
-Global axes follow the [axis convention](#axes). Local axes are the object's own, named as Unity names them (Y up, Z forward).
+While transforming, Unity's move / rotate / scale gizmo hides, and every other key is held back, so X doesn't delete and digits don't switch views. The current value and axis show at the bottom of the Scene view.
+
+Global axes follow the [axis setting](#settings). Local axes are the object's own, named as Unity names them (Y up, Z forward).
+
+## Object shortcuts
+
+| Key | Effect |
+|---|---|
+| H | Hide the selection and everything under it |
+| Shift+H | Hide everything except the selection |
+| Alt+H | Reveal everything |
+| Alt+G / Alt+R / Alt+S | Reset local position to 0, rotation to 0, scale to 1, as one undo step |
+| Shift+D | Duplicate and start moving the copy. Right click keeps the copy in place; one undo removes the copy |
+| Ctrl+P | Parent the selected objects to the active one, keeping where they are. Select the children first and the parent last |
+| Alt+P | Take the selected objects out of their parents, keeping where they are |
+| A | Select all |
+| Alt+A | Select none |
+
+Hiding uses Unity's Scene view visibility: it only affects what you see in the Editor, isn't saved in the scene, and doesn't change the game.
+
+Unity keeps the hierarchy inside a prefab instance fixed, so Ctrl+P / Alt+P skip objects inside one, with a warning in the Console. Open the prefab to change its hierarchy.
 
 ## Numpad views
 
@@ -100,42 +130,57 @@ Global axes follow the [axis convention](#axes). Local axes are the object's own
 | Numpad 7 | Top |
 | Ctrl + Numpad 7 | Bottom |
 | Numpad 5 | Toggle orthographic / perspective |
+| Numpad . | Frame the selection, like Unity's F |
+| Numpad / | Local view: only the selection shows, framed. Again to show everything and go back to the view from before |
 
-The views keep the current pivot and zoom, and turn to face the [axis convention](#axes).
+The views keep the current pivot and zoom, and follow the [axis setting](#settings).
 
-## Axes
+Like Blender's Auto Perspective, a view that went orthographic through 1, 3 or 7 returns to perspective when you orbit it. A view made orthographic with 5 stays orthographic while orbiting.
 
-**Edit → Preferences → Blender Like → Axes**:
+Local view uses Unity's isolation, the same as its own isolation shortcut: it isn't saved in the scene.
 
-| Setting | Views | X / Y / Z in modal rotation |
-|---|---|---|
-| **Blender** (default) | Match Blender for models exported with the default FBX settings: Numpad 7 shows the model the way Blender's top view does | Blender's names: Z is up, Y runs back to front. R Z 90 turns the same way as in Blender |
-| **Unity** | Unity's own orientation, the same as the Scene view gizmo | Unity's names: Y is up, Z forward |
+## Settings
 
-Why Blender needs its own setting: a default Blender FBX export brings Blender's +Y to Unity's -Z. Unity's top view puts +Z at the top of the screen, so a plan drawn in Blender shows up upside down in it.
+**Edit → Preferences → Blender Like**:
 
-The setting is saved per project, on your machine only (in `UserSettings/`, which Unity projects keep out of version control).
+| Setting | Effect |
+|---|---|
+| **Axes: Blender** (default) | Views match Blender for models exported with the default FBX settings: Numpad 7 shows the model the way Blender's top view does. X / Y / Z use Blender's names: Z is up, Y runs back to front, and G Z 1 or R Z 90 go the same way as in Blender |
+| **Axes: Unity** | Views use Unity's own orientation, the same as the Scene view gizmo. X / Y / Z use Unity's names: Y is up, Z forward |
+| **Auto Perspective** (on by default) | Views made orthographic by 1, 3 or 7 go back to perspective when orbited |
+
+Why Blender needs its own axis setting: a default Blender FBX export brings Blender's +Y to Unity's -Z. Unity's top view puts +Z at the top of the screen, so a plan drawn in Blender shows up upside down in it.
+
+Settings are saved per project, on your machine only (in `UserSettings/`, which Unity projects keep out of version control).
 
 ## Conflicts with existing shortcuts
 
-The package binds R and the numpad keys. If other shortcuts in your profile already use them, change one side in **Edit → Shortcuts**:
+When a Scene view shortcut and a global one share a key, Unity runs the Scene view one while the Scene view is focused. So G, R, S, Ctrl+P and the others override Unity's global keys only there; the fly mode keys (right mouse + WASD) keep working.
 
-- Unity's default profile uses R for the Scale tool. The package's R only acts in the Scene view.
-- If you bound Unity's own **Scene View → Set Orthographic ... View** or **Toggle Orthographic Projection** to the numpad, clear those bindings, or both would answer the same key.
+Two of Unity's defaults live in a context of their own, active in the Scene view too, so they do clash with the package:
+
+- **Scene Visibility → Toggle Selection And Descendants Visibility** (H)
+- **Scene Visibility → Toggle Isolation On Selection And Descendants** (Shift+H)
+
+Clear their bindings in **Edit → Shortcuts** (the package covers both with H and Numpad /). The same goes for any of Unity's **Scene View → Set Orthographic ... View** or **Toggle Orthographic Projection** you bound to the numpad yourself.
 
 ## How it works
 
 - The package is one editor assembly (`UnityBlenderLike.Editor`). Nothing runs in builds or at runtime, and no scene or asset refers to it.
 - The keys are regular Shortcut Manager shortcuts in the Scene view context, so they show and rebind in **Edit → Shortcuts**.
-- While the modal rotation runs, a handler placed ahead of the Shortcut Manager reads the keys, so the modal gets them before any other shortcut. It's removed when the rotation ends.
-- Confirming puts every object back where it started, records it for Undo, then applies the final rotation, so the whole drag undoes in one step.
+- While a modal transform runs, a handler placed ahead of the Shortcut Manager reads the keys, so the modal gets them before any other shortcut. It's removed when the transform ends.
+- Confirming puts every object back where it started, records it for Undo, then applies the final transform, so the whole drag undoes in one step. Shift+D merges the duplicate into that same step.
+- Auto Perspective reads the Scene view's view animation (internal) to tell it apart from an orbit.
 
 ## Compatibility
 
 Written and tested on Unity 6 (6000.6) on Windows. It only uses editor APIs that exist since Unity 2021.3, the minimum declared in `package.json`, but older versions haven't been tested.
 
-The key handler reads `EditorApplication.globalEventHandler`, an internal Unity field. If a future version removes it, rotating with the mouse and confirming or cancelling with a click still work, but the keys (axis locks, typed angles, Enter, Esc) go to Unity's own shortcuts instead.
+Two features read internal Unity fields. If a future version removes them:
+
+- `EditorApplication.globalEventHandler`: moving the mouse and confirming or cancelling with a click still work, but the keys during a modal transform (axis locks, typed values, Enter, Esc) go to Unity's own shortcuts instead.
+- The Scene view's view animation: Auto Perspective waits a fixed second after a view key before it starts watching for orbits.
 
 ## Why
 
-Coming from Blender, two things in Unity's Scene view got in the way. Unity's rotate gizmo stops following the mouse when you circle the pivot, which makes a plain 180° turn awkward. And plans modeled in Blender showed up upside down in Unity's top view. This package fixes both, and keeps them out of the shared project, the same way [MayaBlenderLike](https://github.com/uayten/MayaBlenderLike) does for Maya.
+Coming from Blender, Unity's Scene view kept getting in the way. Unity's rotate gizmo stops following the mouse when you circle the pivot, which makes a plain 180° turn awkward. Plans modeled in Blender showed up upside down in Unity's top view. And hands trained on G, R, S and H kept reaching for keys that do something else. This package brings those habits over, and keeps them out of the shared project, the same way [MayaBlenderLike](https://github.com/uayten/MayaBlenderLike) does for Maya.
