@@ -44,6 +44,16 @@ namespace UnityBlenderLike
         private SerializedProperty rotationProperty;
         private SerializedProperty scaleProperty;
 
+        /// <summary>
+        /// An Inspector already open when this editor first compiles can keep Unity's Transform
+        /// Inspector until the selection changes; rebuilding it picks this one up right away.
+        /// </summary>
+        [InitializeOnLoadMethod]
+        private static void RebuildOpenInspectors()
+        {
+            EditorApplication.delayCall += () => ActiveEditorTracker.sharedTracker.ForceRebuild();
+        }
+
         private void OnEnable()
         {
             positionProperty = serializedObject.FindProperty("m_LocalPosition");
