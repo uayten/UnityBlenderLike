@@ -308,15 +308,18 @@ namespace UnityBlenderLike
             axisIndex = index;
         }
 
-        /// <summary>Direction of the locked axis in Unity's world.</summary>
+        /// <summary>
+        /// Direction of the locked axis in Unity's world. Local axes are the object's own, named
+        /// by the same convention as the global ones, so with Blender axes local Z is the object's
+        /// up, as the Z-up Transform Inspector shows it.
+        /// </summary>
         private static Vector3 AxisDirection()
         {
-            return axisSpace == AxisSpace.Local
-                ? localAxesRotation * UnityUnit(axisIndex)
-                : BlenderLikeSettings.GlobalDirection(axisIndex);
+            Vector3 direction = BlenderLikeSettings.GlobalDirection(axisIndex);
+            return axisSpace == AxisSpace.Local ? localAxesRotation * direction : direction;
         }
 
-        /// <summary>Local axes are the object's own, named as Unity names them.</summary>
+        /// <summary>Unity's own axis for a component index of Transform.localScale.</summary>
         private static Vector3 UnityUnit(int index)
         {
             return index == 0 ? Vector3.right : index == 1 ? Vector3.up : Vector3.forward;
@@ -400,7 +403,7 @@ namespace UnityBlenderLike
             switch (axisSpace)
             {
                 case AxisSpace.Global: return BlenderLikeSettings.GlobalRotationAxis(axisIndex);
-                case AxisSpace.Local: return localAxesRotation * UnityUnit(axisIndex);
+                case AxisSpace.Local: return localAxesRotation * BlenderLikeSettings.GlobalRotationAxis(axisIndex);
                 default: return viewForward;
             }
         }
@@ -619,7 +622,7 @@ namespace UnityBlenderLike
             if (axisSpace != AxisSpace.Free)
             {
                 Vector3 direction = AxisDirection();
-                Handles.color = AxisColor(axisSpace == AxisSpace.Local ? UnityUnit(axisIndex) : direction);
+                Handles.color = AxisColor(BlenderLikeSettings.GlobalDirection(axisIndex));
                 float length = HandleUtility.GetHandleSize(pivot) * 1000f;
                 Handles.DrawLine(pivot - direction * length, pivot + direction * length);
             }

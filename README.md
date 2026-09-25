@@ -6,6 +6,7 @@ Makes the Unity Scene view feel like Blender, as an editor-only package you can 
 - **Axis locks and typed values**: X / Y / Z lock an axis (again for local), type `90` for an exact value, Ctrl snaps, G / R / S switch mode without confirming, click to confirm, right click to cancel
 - **Blender's object keys**: H / Shift+H / Alt+H hide and reveal, Alt+G / Alt+R / Alt+S clear transforms, Shift+D duplicates and moves, Ctrl+P / Alt+P parent and unparent, A / Alt+A select all and none
 - **Numpad views**: 1 / 3 / 7 for front, right and top, Ctrl for the opposite side, 5 to toggle orthographic, `.` to frame the selection, / for local view, and Auto Perspective when orbiting
+- **Z-up Transform Inspector**: Location, Rotation and Scale show and edit the values Blender's N panel shows, with Z up and Blender's XYZ Euler, while the object keeps Unity's own values underneath
 - **Blender's axes**: views and axis locks match models exported from Blender with the default FBX settings, so Numpad 7 shows what Blender's top view shows and R Z turns around the vertical
 - **Nothing in the project**: no scene, asset or setting changes, and it can live outside version control, so your teammates keep stock Unity
 
@@ -17,6 +18,7 @@ Makes the Unity Scene view feel like Blender, as an editor-only package you can 
 - [Modal transforms](#modal-transforms)
 - [Object shortcuts](#object-shortcuts)
 - [Numpad views](#numpad-views)
+- [Z-up Transform Inspector](#z-up-transform-inspector)
 - [Settings](#settings)
 - [Conflicts with existing shortcuts](#conflicts-with-existing-shortcuts)
 - [How it works](#how-it-works)
@@ -99,7 +101,7 @@ Unity can't scale an object along an arbitrary world axis without shearing it, s
 
 While transforming, Unity's move / rotate / scale gizmo hides, and every other key is held back, so X doesn't delete and digits don't switch views. The current value and axis show at the bottom of the Scene view.
 
-Global axes follow the [axis setting](#settings). Local axes are the object's own, named as Unity names them (Y up, Z forward).
+Global axes follow the [axis setting](#settings). Local axes are the object's own, named the same way: with Blender axes, local Z is the object's up, as the [Z-up Transform Inspector](#z-up-transform-inspector) shows it.
 
 ## Object shortcuts
 
@@ -139,6 +141,26 @@ Like Blender's Auto Perspective, a view that went orthographic through 1, 3 or 7
 
 Local view uses Unity's isolation, the same as its own isolation shortcut: it isn't saved in the scene.
 
+## Z-up Transform Inspector
+
+With Blender axes, the Transform component in the Inspector shows Blender's values:
+
+| Row | Shows |
+|---|---|
+| **Location** | Position with Z up and Y from front to back: Blender X = Unity -X, Blender Y = Unity -Z, Blender Z = Unity Y |
+| **Rotation** | Blender's XYZ Euler angles, in degrees, turning the way they turn in Blender |
+| **Scale** | Scale with Y and Z swapped |
+
+The labels read Location / Rotation / Scale, like Blender's N panel, so it's clear which values you're looking at. Editing works as usual: typing, dragging the X / Y / Z labels, expressions, several objects at once (a value that differs shows as `—`), prefab overrides in bold with right-click revert, and Undo.
+
+Only the display changes. The object keeps Unity's values, so scenes, prefabs, animation and code are untouched, and a teammate without the package sees Unity's values for the same object. When talking about positions with them, remember that your Z is their Y.
+
+To see Unity's values, right click the Transform header → **Blender Like: Z-Up Values**, or turn it off in [Settings](#settings). The Scene view gizmos stay Unity's: the up arrow is still the green one.
+
+Values match Blender's N panel for objects whose FBX brings no axis rotation of its own. When a model's root comes in with rotation X -90 (FBX import without **Bake Axis Conversion**), the Inspector shows that -90, because it's really there in Unity.
+
+RectTransform (UI) keeps Unity's Inspector.
+
 ## Settings
 
 **Edit → Preferences → Blender Like**:
@@ -147,6 +169,7 @@ Local view uses Unity's isolation, the same as its own isolation shortcut: it is
 |---|---|
 | **Axes: Blender** (default) | Views match Blender for models exported with the default FBX settings: Numpad 7 shows the model the way Blender's top view does. X / Y / Z use Blender's names: Z is up, Y runs back to front, and G Z 1 or R Z 90 go the same way as in Blender |
 | **Axes: Unity** | Views use Unity's own orientation, the same as the Scene view gizmo. X / Y / Z use Unity's names: Y is up, Z forward |
+| **Z-Up Transform Inspector** (on by default) | With Blender axes, the [Transform Inspector](#z-up-transform-inspector) shows Blender's values |
 | **Auto Perspective** (on by default) | Views made orthographic by 1, 3 or 7 go back to perspective when orbited |
 
 Why Blender needs its own axis setting: a default Blender FBX export brings Blender's +Y to Unity's -Z. Unity's top view puts +Z at the top of the screen, so a plan drawn in Blender shows up upside down in it.
@@ -171,6 +194,7 @@ Clear their bindings in **Edit → Shortcuts** (the package covers both with H a
 - While a modal transform runs, a handler placed ahead of the Shortcut Manager reads the keys, so the modal gets them before any other shortcut. It's removed when the transform ends.
 - Confirming puts every object back where it started, records it for Undo, then applies the final transform, so the whole drag undoes in one step. Shift+D merges the duplicate into that same step.
 - Auto Perspective reads the Scene view's view animation (internal) to tell it apart from an orbit.
+- The Z-up Transform Inspector is a custom Inspector for Transform. It converts the values on the way in and out, and draws Unity's own Transform Inspector when it's off.
 
 ## Compatibility
 
@@ -180,6 +204,7 @@ Two features read internal Unity fields. If a future version removes them:
 
 - `EditorApplication.globalEventHandler`: moving the mouse and confirming or cancelling with a click still work, but the keys during a modal transform (axis locks, typed values, Enter, Esc) go to Unity's own shortcuts instead.
 - The Scene view's view animation: Auto Perspective waits a fixed second after a view key before it starts watching for orbits.
+- `UnityEditor.TransformInspector`, Unity's own Transform Inspector: with the Z-up Inspector off, the Transform shows its raw fields instead (rotation as a quaternion).
 
 ## Why
 

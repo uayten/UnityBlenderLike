@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.0] - 2026-09-25
+
+### Added
+
+- Z-up Transform Inspector: with Blender axes, Location, Rotation (Blender's XYZ Euler) and Scale show and edit Blender's values. Toggle in Preferences > Blender Like or the Transform header's context menu.
+
+### Changed
+
+- With Blender axes, local X / Y / Z in the modal transforms use Blender's names too, matching the Z-up Inspector.
+
 ## [0.2.0] - 2026-09-25
 
 ### Added

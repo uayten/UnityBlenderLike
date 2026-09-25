@@ -18,6 +18,7 @@ namespace UnityBlenderLike
     {
         private const string AxesKey = "UnityBlenderLike.Axes";
         private const string AutoPerspectiveKey = "UnityBlenderLike.AutoPerspective";
+        private const string ZUpTransformInspectorKey = "UnityBlenderLike.ZUpTransformInspector";
 
         public static AxisConvention Axes
         {
@@ -66,19 +67,42 @@ namespace UnityBlenderLike
             set => EditorUserSettings.SetConfigValue(AutoPerspectiveKey, value.ToString());
         }
 
+        /// <summary>
+        /// Whether the Transform Inspector shows Blender's Z-up values when the axes are Blender's.
+        /// </summary>
+        public static bool ZUpTransformInspector
+        {
+            get => EditorUserSettings.GetConfigValue(ZUpTransformInspectorKey) != bool.FalseString;
+            set => EditorUserSettings.SetConfigValue(ZUpTransformInspectorKey, value.ToString());
+        }
+
+        public static bool ZUpTransformActive => Axes == AxisConvention.Blender && ZUpTransformInspector;
+
         [SettingsProvider]
         private static SettingsProvider CreateSettingsProvider()
         {
             return new SettingsProvider("Preferences/Blender Like", SettingsScope.User)
             {
                 label = "Blender Like",
-                keywords = new[] { "Blender", "numpad", "view", "move", "rotate", "scale", "axis", "perspective" },
+                keywords = new[] { "Blender", "numpad", "view", "move", "rotate", "scale", "axis", "perspective", "Z up", "Transform", "Inspector" },
                 guiHandler = _ =>
                 {
                     EditorGUIUtility.labelWidth = 160f;
+                    EditorGUI.BeginChangeCheck();
                     Axes = (AxisConvention)EditorGUILayout.EnumPopup(
                         new GUIContent("Axes", "Axis convention of the numpad views and of X / Y / Z in G / R / S."),
                         Axes);
+                    if (EditorGUI.EndChangeCheck())
+                        UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
+                    EditorGUI.BeginChangeCheck();
+                    using (new EditorGUI.DisabledScope(Axes != AxisConvention.Blender))
+                    {
+                        ZUpTransformInspector = EditorGUILayout.Toggle(
+                            new GUIContent("Z-Up Transform Inspector", "The Transform Inspector shows and edits Blender's values: Z up, and rotation as Blender's XYZ Euler."),
+                            ZUpTransformInspector);
+                    }
+                    if (EditorGUI.EndChangeCheck())
+                        UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
                     AutoPerspective = EditorGUILayout.Toggle(
                         new GUIContent("Auto Perspective", "A view made orthographic by Numpad 1 / 3 / 7 goes back to perspective when you orbit it."),
                         AutoPerspective);
