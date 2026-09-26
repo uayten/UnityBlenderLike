@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0] - 2026-09-26
+
+### Added
+
+- Alt + drag on the move gizmo duplicates the selection and moves the copy along the part grabbed, like Unreal. Toggle in Preferences > Blender Like.
+- Shift + X / Y / Z in G / R / S: lock to everything but that axis, as in Blender.
+
+### Fixed
+
+- Keys during G / R / S (axis locks, typed values, Enter, Esc) never reached the transform in Unity 6.6, which hands real keys to the Scene view's UI Toolkit panel, so they went to Unity's own shortcuts instead. They're now read from the panel, and Esc acts on release, since Unity keeps its press from the Scene view.
+- The transform's hint moved to the top of the Scene view, where Unity's bottom-left overlays no longer cover it.
+
 ## [0.8.1] - 2026-09-26
 
 ### Fixed

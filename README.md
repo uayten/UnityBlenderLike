@@ -3,8 +3,9 @@
 Makes the Unity Scene view feel like Blender, as an editor-only package you can keep to yourself in a shared project:
 
 - **Modal G / R / S**: move, rotate and scale follow the mouse until you click, and rotation follows the cursor around the pivot, full turns included, instead of Unity's gizmo that stops following once you circle the pivot
-- **Axis locks and typed values**: X / Y / Z lock an axis (again for local), type `90` for an exact value, Shift for precision, Ctrl snaps, G / R / S switch mode without confirming, click to confirm, right click to cancel
+- **Axis locks and typed values**: X / Y / Z lock an axis (again for local), Shift + X / Y / Z everything but that axis, type `90` for an exact value, Shift for precision, Ctrl snaps, G / R / S switch mode without confirming, click to confirm, right click to cancel
 - **Keys follow the mouse**: with the mouse over the Scene view, every key goes there, even right after clicking in the Hierarchy, like Blender's areas
+- **Alt + drag duplicates**: Alt + drag an arrow of Unity's move gizmo to copy the selection and move the copy along it, like Unreal
 - **Blender's object keys**: H / Shift+H / Alt+H hide and reveal, Alt+G / Alt+R / Alt+S clear transforms, Shift+D duplicates and moves, Ctrl+P / Alt+P parent and unparent, A / Alt+A select all and none
 - **Blender's middle mouse**: middle drag orbits around the pivot, Shift + middle drag pans
 - **Numpad views**: 1 / 3 / 7 for front, right and top, Ctrl for the opposite side, 5 to toggle orthographic, `.` to frame the selection, / for local view, and Auto Perspective when orbiting
@@ -98,10 +99,11 @@ Select something, point at the Scene view and press G, R or S:
 | X / Y / Z | Lock to the global axis; press again for the local axis (of the active object), again to unlock. A line through the pivot, in Unity's color for the axis it runs along, shows the lock |
 | Digits, `.`, `-`, Backspace | Type an exact value: meters for move (along X when no axis is locked), degrees for rotate, factor for scale |
 | G / R / S | Switch to another transform, keeping what the previous one did |
+| Shift + X / Y / Z | Lock to everything but that axis, as in Blender: G moves on the plane of the other two (Shift+Z moves over the floor with Blender axes), S scales the other two, R turns around that axis. Again for the local plane, again to unlock |
 | Shift | Precision: while held, moving and scaling follow a tenth of the mouse movement, and rotating turns a tenth of the angle the cursor goes around the pivot |
 | Ctrl | Snap: Unity's grid snap step for move, 5° for rotate, 0.1 for scale |
 | Left click / Enter | Confirm, as one undo step |
-| Right click / Esc | Cancel and go back to where it started |
+| Right click / Esc | Cancel and go back to where it started (Esc acts when it's released: Unity 6.6 keeps its press from the Scene view) |
 
 Like Blender's continuous grab, the cursor never runs out of room: when it reaches an edge of the Scene view, it jumps to the opposite edge and the transform goes on without a jump. The dotted line to the pivot follows where the mouse would be, past the edge. While transforming, the cursor shows a move, rotate or scale arrow. The jump uses the operating system's cursor call (Windows and macOS); on Linux the cursor stops at the edge as in stock Unity.
 
@@ -126,6 +128,12 @@ Global axes follow the [axis setting](#settings). Local axes are the object's ow
 | Alt+P | Take the selected objects out of their parents, keeping where they are |
 | A | Select all |
 | Alt+A | Select none |
+
+### Alt + drag duplicate
+
+With Unity's move (W) or transform (Y) tool, hold Alt and drag a part of the gizmo: the selection is duplicated and the copy follows the drag, locked like the part you grabbed (an arrow moves along its axis, a plane square on its plane, the center in the view plane). The original stays where it was. Release to confirm; the duplicate and the move undo together. Alt + click without dragging takes the copy back. Away from the gizmo, Alt + drag still orbits.
+
+While dragging, the keys of the [modal transforms](#modal-transforms) work too: X / Y / Z to change the lock, digits for an exact distance.
 
 Hiding uses Unity's Scene view visibility: it only affects what you see in the Editor, isn't saved in the scene, and doesn't change the game.
 
@@ -205,6 +213,7 @@ This works with the Hierarchy window of Unity 6 (the one built with UI Toolkit).
 | **Z-Up Transform Inspector** (on by default) | With Blender axes, the [Transform Inspector](#z-up-transform-inspector) shows Blender's values |
 | **Auto Perspective** (on by default) | Views made orthographic by 1, 3 or 7 go back to perspective when orbited |
 | **Middle Mouse Navigation** (on by default) | [Middle drag orbits, Shift + middle drag pans](#middle-mouse-navigation) |
+| **Alt + Drag Duplicates** (on by default) | [Alt + drag on the move gizmo duplicates](#alt--drag-duplicate) |
 
 Why Blender needs its own axis setting: a default Blender FBX export brings Blender's +Y to Unity's -Z. Unity's top view puts +Z at the top of the screen, so a plan drawn in Blender shows up upside down in it.
 
@@ -225,7 +234,8 @@ Clear their bindings in **Edit → Shortcuts** (the package covers both with H a
 
 - The package is one editor assembly (`UnityBlenderLike.Editor`). Nothing runs in builds or at runtime, and no scene or asset refers to it.
 - The keys are regular Shortcut Manager shortcuts in the Scene view context, so they show and rebind in **Edit → Shortcuts**.
-- While a modal transform runs, a handler placed ahead of the Shortcut Manager reads the keys, so the modal gets them before any other shortcut. It's removed when the transform ends.
+- While a modal transform runs, it reads the keys before any shortcut: from the Scene view's UI Toolkit panel, which is where Unity 6.6 delivers them, and from a handler ahead of the Shortcut Manager, for versions that deliver them the IMGUI way. Both are removed when the transform ends.
+- Alt + drag duplicate works out which part of the move gizmo is under the mouse on every Scene view event, and takes the Alt + press from the Scene view's panel before Unity's Alt + drag Orbit shortcut sees it. The drag is the package's own move, locked like the gizmo part.
 - Middle mouse navigation reads the mouse in the Scene view's `beforeSceneGui`, before the Scene view's own camera controls, and moves the view's pivot and rotation.
 - Keys follow the mouse through two listeners, because keys reach windows two ways: IMGUI windows get them through the Shortcut Manager's handler (a second handler goes ahead of it), and UI Toolkit windows, like Unity 6's Hierarchy, get them straight from their panel (a listener on each panel's root takes them first). Either one gives the Scene view the focus and sends it the key. The Game view keeps its keys, so playing isn't interrupted when the mouse drifts over the Scene view.
 - Confirming puts every object back where it started, records it for Undo, then applies the final transform, so the whole drag undoes in one step. Shift+D merges the duplicate into that same step.
@@ -237,7 +247,7 @@ Clear their bindings in **Edit → Shortcuts** (the package covers both with H a
 
 Written and tested on Unity 6 (6000.6) on Windows. It only uses editor APIs that exist since Unity 2021.3, the minimum declared in `package.json`, but older versions haven't been tested.
 
-Two features read internal Unity fields. If a future version removes them:
+Some features read internal Unity fields. If a future version removes them:
 
 - `EditorApplication.globalEventHandler`: moving the mouse and confirming or cancelling with a click still work, but the keys during a modal transform (axis locks, typed values, Enter, Esc) go to Unity's own shortcuts instead, and keys stop following the mouse (click the Scene view first).
 - The Scene view's view animation: Auto Perspective waits a fixed second after a view key before it starts watching for orbits.

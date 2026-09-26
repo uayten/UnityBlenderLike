@@ -3,6 +3,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityBlenderLike
 {
@@ -22,7 +23,8 @@ namespace UnityBlenderLike
     {
         public enum Mode { Move, Rotate, Scale }
 
-        private enum AxisSpace { Free, Global, Local }
+        /// <summary>Gizmo: the axes of the move gizmo part a drag started on (Alt + drag).</summary>
+        private enum AxisSpace { Free, Global, Local, Gizmo }
 
         private const float RotateSnapStep = 5f;
 
@@ -100,6 +102,18 @@ namespace UnityBlenderLike
         /// on the plane of the other two, scaling scales the other two, rotating turns around it.
         /// </summary>
         private static bool planeLock;
+
+        /// <summary>The move gizmo's axes, for a drag that started on it.</summary>
+        private static Vector3[] gizmoAxes = new Vector3[3];
+
+        /// <summary>Started by a mouse drag: releasing the button confirms, instead of a click.</summary>
+        private static bool dragging;
+
+        private static Object[] dragSelectionBefore;
+        private static bool mouseMoved;
+
+        /// <summary>The Scene view panel's root, listened on for keys while the modal runs.</summary>
+        private static VisualElement keyPanelRoot;
         private static string typedValue = string.Empty;
 
         private static bool previousWantsMouseMove;
@@ -142,6 +156,7 @@ namespace UnityBlenderLike
             targets = selected;
             collapseUndoGroup = undoGroup;
             original = Capture();
+            mouseMoved = false;
 
             pivot = Tools.handlePosition;
             aroundCenter = Tools.pivotMode == PivotMode.Center;
@@ -163,6 +178,33 @@ namespace UnityBlenderLike
             AssemblyReloadEvents.beforeAssemblyReload += Cancel;
             active = true;
             view.Repaint();
+        }
+
+        /// <summary>
+        /// A move that follows a mouse drag already under way, locked like the move gizmo part it
+        /// started on, and confirmed when the button is released. Used by Alt + drag duplicate.
+        /// </summary>
+        /// <param name="axes">The gizmo's X, Y and Z directions.</param>
+        /// <param name="axis">The gizmo axis grabbed, or -1 for the center (free in the view plane).</param>
+        /// <param name="plane">A plane handle: everything but <paramref name="axis"/>.</param>
+        /// <param name="selectionBefore">
+        /// Selection to go back to if the button is released without moving: the undo group is then
+        /// reverted, taking the duplicate back.
+        /// </param>
+        public static void BeginDrag(SceneView view, int undoGroup, Vector3[] axes, int axis, bool plane, Object[] selectionBefore)
+        {
+            Begin(Mode.Move, view, undoGroup);
+            if (!active)
+                return;
+
+            dragging = true;
+            dragSelectionBefore = selectionBefore;
+            if (axis < 0)
+                return;
+            gizmoAxes = axes;
+            axisSpace = AxisSpace.Gizmo;
+            axisIndex = axis;
+            planeLock = plane;
         }
 
         private static void StartMode(Mode newMode)
@@ -229,6 +271,8 @@ namespace UnityBlenderLike
                 case EventType.MouseDrag:
                     Vector2 mouseDelta = e.mousePosition - lastRealMouse;
                     lastRealMouse = e.mousePosition;
+                    if (mouseDelta != Vector2.zero)
+                        mouseMoved = true;
 
                     // A jump across half the view is a cursor wrap that events from before it
                     // are still catching up with, not a real movement.
@@ -249,6 +293,32 @@ namespace UnityBlenderLike
                     snapping = e.control;
                     Apply();
                     e.Use();
+                    break;
+
+                case EventType.MouseUp:
+                    if (!dragging || e.button != 0)
+                        break;
+                    e.Use();
+                    if (mouseMoved)
+                    {
+                        Confirm();
+                        Unsubscribe();
+                        break;
+                    }
+
+                    // A click without a drag: take the whole thing back.
+                    int group = collapseUndoGroup;
+                    Object[] selection = dragSelectionBefore;
+                    Cancel();
+                    Unsubscribe();
+                    if (group >= 0)
+                    {
+                        EditorApplication.delayCall += () =>
+                        {
+                            Undo.RevertAllDownToGroup(group);
+                            Selection.objects = selection;
+                        };
+                    }
                     break;
 
                 case EventType.MouseDown:
@@ -313,8 +383,40 @@ namespace UnityBlenderLike
             Event e = Event.current;
             if (!active || e == null || e.type != EventType.KeyDown)
                 return;
+            if (HandleKey(e.keyCode, e.shift, e.control))
+                e.Use();
+        }
 
-            switch (e.keyCode)
+        /// <summary>
+        /// Keys from the Scene view's panel. Unity 6.6 hands real keys to UI Toolkit panels without
+        /// going through the global event handler, so they're read here too.
+        /// </summary>
+        private static void OnPanelKeyDown(KeyDownEvent evt)
+        {
+            if (!active)
+                return;
+            // The character event that follows a key would reach the Scene view's shortcuts too.
+            if (evt.keyCode == KeyCode.None || HandleKey(evt.keyCode, evt.shiftKey, evt.ctrlKey))
+                evt.StopImmediatePropagation();
+        }
+
+        /// <summary>
+        /// Esc on release: Unity 6.6 takes Esc's key-down before any window sees it, and only the
+        /// release reaches the Scene view.
+        /// </summary>
+        private static void OnPanelKeyUp(KeyUpEvent evt)
+        {
+            if (!active || evt.keyCode != KeyCode.Escape)
+                return;
+            evt.StopImmediatePropagation();
+            Cancel();
+            Unsubscribe();
+        }
+
+        /// <returns>Whether the key was taken, so no shortcut sees it.</returns>
+        private static bool HandleKey(KeyCode keyCode, bool shift, bool control)
+        {
+            switch (keyCode)
             {
                 case KeyCode.LeftControl:
                 case KeyCode.RightControl:
@@ -324,10 +426,10 @@ namespace UnityBlenderLike
                 case KeyCode.RightAlt:
                 case KeyCode.LeftCommand:
                 case KeyCode.RightCommand:
-                    snapping = e.control;
+                    snapping = control;
                     Apply();
                     sceneView.Repaint();
-                    return;
+                    return false;
 
                 case KeyCode.Escape:
                     Cancel();
@@ -344,9 +446,9 @@ namespace UnityBlenderLike
                 case KeyCode.R: SwitchMode(Mode.Rotate); break;
                 case KeyCode.S: SwitchMode(Mode.Scale); break;
 
-                case KeyCode.X: CycleAxis(0, e.shift); break;
-                case KeyCode.Y: CycleAxis(1, e.shift); break;
-                case KeyCode.Z: CycleAxis(2, e.shift); break;
+                case KeyCode.X: CycleAxis(0, shift); break;
+                case KeyCode.Y: CycleAxis(1, shift); break;
+                case KeyCode.Z: CycleAxis(2, shift); break;
 
                 case KeyCode.Minus:
                 case KeyCode.KeypadMinus:
@@ -366,26 +468,26 @@ namespace UnityBlenderLike
                     break;
 
                 default:
-                    if (e.keyCode >= KeyCode.Alpha0 && e.keyCode <= KeyCode.Alpha9)
-                        typedValue += (char)('0' + (e.keyCode - KeyCode.Alpha0));
-                    else if (e.keyCode >= KeyCode.Keypad0 && e.keyCode <= KeyCode.Keypad9)
-                        typedValue += (char)('0' + (e.keyCode - KeyCode.Keypad0));
+                    if (keyCode >= KeyCode.Alpha0 && keyCode <= KeyCode.Alpha9)
+                        typedValue += (char)('0' + (keyCode - KeyCode.Alpha0));
+                    else if (keyCode >= KeyCode.Keypad0 && keyCode <= KeyCode.Keypad9)
+                        typedValue += (char)('0' + (keyCode - KeyCode.Keypad0));
                     break;
             }
 
-            // Every other key is swallowed too, so no shortcut runs in the middle of the transform.
-            e.Use();
+            // Every other key is taken too, so no shortcut runs in the middle of the transform.
             if (active)
             {
                 Apply();
                 sceneView.Repaint();
             }
+            return true;
         }
 
         /// <param name="plane">Shift was held: lock to everything but this axis.</param>
         private static void CycleAxis(int index, bool plane)
         {
-            if (axisSpace == AxisSpace.Free || axisIndex != index || planeLock != plane)
+            if (axisSpace == AxisSpace.Free || axisSpace == AxisSpace.Gizmo || axisIndex != index || planeLock != plane)
                 axisSpace = AxisSpace.Global;
             else if (axisSpace == AxisSpace.Global)
                 axisSpace = AxisSpace.Local;
@@ -404,6 +506,8 @@ namespace UnityBlenderLike
 
         private static Vector3 AxisDirection(int index)
         {
+            if (axisSpace == AxisSpace.Gizmo)
+                return gizmoAxes[index];
             Vector3 direction = BlenderLikeSettings.GlobalDirection(index);
             return axisSpace == AxisSpace.Local ? localAxesRotation * direction : direction;
         }
@@ -688,6 +792,7 @@ namespace UnityBlenderLike
         private static void End()
         {
             active = false;
+            dragging = false;
             UnhookKeys();
             AssemblyReloadEvents.beforeAssemblyReload -= Cancel;
             if (sceneView != null)
@@ -759,6 +864,10 @@ namespace UnityBlenderLike
 
         private static void HookKeys()
         {
+            keyPanelRoot = sceneView.rootVisualElement?.panel?.visualTree;
+            keyPanelRoot?.RegisterCallback<KeyDownEvent>(OnPanelKeyDown, TrickleDown.TrickleDown);
+            keyPanelRoot?.RegisterCallback<KeyUpEvent>(OnPanelKeyUp, TrickleDown.TrickleDown);
+
             if (GlobalEventHandlerField == null)
                 return;
             var current = (EditorApplication.CallbackFunction)GlobalEventHandlerField.GetValue(null);
@@ -767,6 +876,10 @@ namespace UnityBlenderLike
 
         private static void UnhookKeys()
         {
+            keyPanelRoot?.UnregisterCallback<KeyDownEvent>(OnPanelKeyDown, TrickleDown.TrickleDown);
+            keyPanelRoot?.UnregisterCallback<KeyUpEvent>(OnPanelKeyUp, TrickleDown.TrickleDown);
+            keyPanelRoot = null;
+
             if (GlobalEventHandlerField == null)
                 return;
             var current = (EditorApplication.CallbackFunction)GlobalEventHandlerField.GetValue(null);
@@ -794,7 +907,7 @@ namespace UnityBlenderLike
                     if (planeLock == (i == axisIndex))
                         continue;
                     Vector3 direction = AxisDirection(i);
-                    Handles.color = AxisColor(BlenderLikeSettings.GlobalDirection(i));
+                    Handles.color = AxisColor(axisSpace == AxisSpace.Gizmo ? UnityUnit(i) : BlenderLikeSettings.GlobalDirection(i));
                     Handles.DrawLine(pivot - direction * length, pivot + direction * length);
                 }
             }
@@ -811,7 +924,7 @@ namespace UnityBlenderLike
 
             string axisLabel = axisSpace == AxisSpace.Free
                 ? (mode == Mode.Rotate ? "view" : "free")
-                : (planeLock ? "not " : "") + "XYZ"[axisIndex] + (axisSpace == AxisSpace.Global ? " global" : " local");
+                : (planeLock ? "not " : "") + "XYZ"[axisIndex] + (axisSpace == AxisSpace.Global ? " global" : axisSpace == AxisSpace.Local ? " local" : " gizmo");
             string valueLabel;
             if (typedValue.Length > 0)
                 valueLabel = "[" + typedValue + "]";
@@ -825,7 +938,10 @@ namespace UnityBlenderLike
             string text = mode + " " + valueLabel + "   axis: " + axisLabel
                 + "      G/R/S mode · X/Y/Z axis · Shift+X/Y/Z plane · digits value · Shift precision · Ctrl snap · Enter/click confirm · Esc/right click cancel";
 
-            var rect = new Rect(8f, viewSize.y - 30f, 1000f, 22f);
+            // At the top, like Blender's header text: the bottom-left corner holds Unity's overlays.
+            GUIContent content = new GUIContent(text);
+            float width = Mathf.Min(EditorStyles.boldLabel.CalcSize(content).x + 16f, viewSize.x - 16f);
+            var rect = new Rect((viewSize.x - width) * 0.5f, 8f, width, 22f);
             GUI.Box(rect, GUIContent.none, EditorStyles.helpBox);
             GUI.Label(new Rect(rect.x + 6f, rect.y + 2f, rect.width - 12f, rect.height - 4f), text, EditorStyles.boldLabel);
             Handles.EndGUI();
