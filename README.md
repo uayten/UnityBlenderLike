@@ -98,7 +98,7 @@ Select something, point at the Scene view and press G, R or S:
 | X / Y / Z | Lock to the global axis; press again for the local axis (of the active object), again to unlock. A line through the pivot, in Unity's color for the axis it runs along, shows the lock |
 | Digits, `.`, `-`, Backspace | Type an exact value: meters for move (along X when no axis is locked), degrees for rotate, factor for scale |
 | G / R / S | Switch to another transform, keeping what the previous one did |
-| Shift | Precision: the mouse counts a tenth as much while held, for move, rotate and scale |
+| Shift | Precision: while held, moving and scaling follow a tenth of the mouse movement, and rotating turns a tenth of the angle the cursor goes around the pivot |
 | Ctrl | Snap: Unity's grid snap step for move, 5° for rotate, 0.1 for scale |
 | Left click / Enter | Confirm, as one undo step |
 | Right click / Esc | Cancel and go back to where it started |

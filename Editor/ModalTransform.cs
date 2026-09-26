@@ -78,6 +78,11 @@ namespace UnityBlenderLike
         // far while Shift is held, so every mode slows down the same way.
         private static Vector2 mousePosition;
         private static Vector2 lastRealMouse;
+
+        // The mouse as it would be without the edge wrap, at full speed. Rotation measures its angle
+        // around the pivot from here: slowing the point down would shrink and shift the circle the
+        // cursor draws around the pivot, and the angle would swing back and forth.
+        private static Vector2 angleMouse;
         private static Vector2 pivotGui;
         private static Ray startRay;
         private static Ray currentRay;
@@ -198,6 +203,7 @@ namespace UnityBlenderLike
                 mouseStart = e.mousePosition;
                 mousePosition = mouseStart;
                 lastRealMouse = mouseStart;
+                angleMouse = mouseStart;
                 startRay = HandleUtility.GUIPointToWorldRay(mouseStart);
                 currentRay = startRay;
                 scaleStartDistance = Vector2.Distance(mouseStart, pivotGui);
@@ -222,10 +228,14 @@ namespace UnityBlenderLike
                     if (Mathf.Abs(mouseDelta.x) > viewSize.x * 0.5f || Mathf.Abs(mouseDelta.y) > viewSize.y * 0.5f)
                         mouseDelta = Vector2.zero;
 
-                    mousePosition += e.shift ? mouseDelta * PrecisionFactor : mouseDelta;
+                    float precision = e.shift ? PrecisionFactor : 1f;
+                    mousePosition += mouseDelta * precision;
+                    angleMouse += mouseDelta;
                     WrapCursor(e.mousePosition);
-                    float angle = MouseAngle(mousePosition);
-                    accumulatedMouseAngle += Mathf.DeltaAngle(lastMouseAngle, angle);
+
+                    // Shift slows the rotation itself: a tenth of the angle the cursor turns.
+                    float angle = MouseAngle(angleMouse);
+                    accumulatedMouseAngle += Mathf.DeltaAngle(lastMouseAngle, angle) * precision;
                     lastMouseAngle = angle;
                     currentRay = HandleUtility.GUIPointToWorldRay(mousePosition);
                     snapping = e.control;
@@ -754,7 +764,7 @@ namespace UnityBlenderLike
             if (mode != Mode.Move)
             {
                 Handles.color = Color.white;
-                Handles.DrawDottedLine(pivotGui, mousePosition, 4f);
+                Handles.DrawDottedLine(pivotGui, mode == Mode.Rotate ? angleMouse : mousePosition, 4f);
             }
 
             string axisLabel = axisSpace == AxisSpace.Free

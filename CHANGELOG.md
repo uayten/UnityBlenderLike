@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.1] - 2026-09-26
+
+### Fixed
+
+- Shift during R turned the object back and forth instead of slowly around the pivot. Precision now scales the angle the cursor turns around the pivot, as in Blender, instead of slowing the cursor point down, which shrank and shifted the circle it drew.
+
 ## [0.7.0] - 2026-09-26
 
 ### Added
