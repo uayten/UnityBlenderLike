@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.0] - 2026-09-26
+
+### Added
+
+- Middle mouse navigation, as in Blender: middle drag orbits around the pivot and Shift + middle drag pans, instead of Unity's middle drag pan. Toggle in Preferences > Blender Like.
+
 ## [0.5.0] - 2026-09-26
 
 ### Added

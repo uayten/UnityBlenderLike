@@ -43,6 +43,9 @@ namespace UnityBlenderLike
         private static readonly EditorApplication.CallbackFunction KeyHandler = OnGlobalEvent;
 
         private static bool active;
+
+        /// <summary>Whether a modal transform is running, so other mouse handling can step aside.</summary>
+        public static bool IsActive => active;
         private static bool awaitingMouseUp;
         private static double awaitingSince;
         private static int clickControlId;

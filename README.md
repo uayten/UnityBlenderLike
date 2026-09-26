@@ -6,6 +6,7 @@ Makes the Unity Scene view feel like Blender, as an editor-only package you can 
 - **Axis locks and typed values**: X / Y / Z lock an axis (again for local), type `90` for an exact value, Shift for precision, Ctrl snaps, G / R / S switch mode without confirming, click to confirm, right click to cancel
 - **Keys follow the mouse**: with the mouse over the Scene view, the shortcuts act there even right after clicking in the Hierarchy, like Blender's areas
 - **Blender's object keys**: H / Shift+H / Alt+H hide and reveal, Alt+G / Alt+R / Alt+S clear transforms, Shift+D duplicates and moves, Ctrl+P / Alt+P parent and unparent, A / Alt+A select all and none
+- **Blender's middle mouse**: middle drag orbits around the pivot, Shift + middle drag pans
 - **Numpad views**: 1 / 3 / 7 for front, right and top, Ctrl for the opposite side, 5 to toggle orthographic, `.` to frame the selection, / for local view, and Auto Perspective when orbiting
 - **Drag over Hierarchy arrows**: press an expand arrow and drag up or down, and every item you pass opens (or closes) too, like Blender's Outliner
 - **Z-up Transform Inspector**: Location, Rotation and Scale show and edit the values Blender's N panel shows, with Z up and Blender's XYZ Euler, while the object keeps Unity's own values underneath
@@ -19,6 +20,7 @@ Makes the Unity Scene view feel like Blender, as an editor-only package you can 
 - [Shortcuts](#shortcuts)
 - [Modal transforms](#modal-transforms)
 - [Object shortcuts](#object-shortcuts)
+- [Middle mouse navigation](#middle-mouse-navigation)
 - [Numpad views](#numpad-views)
 - [Z-up Transform Inspector](#z-up-transform-inspector)
 - [Hierarchy](#hierarchy)
@@ -127,6 +129,19 @@ Hiding uses Unity's Scene view visibility: it only affects what you see in the E
 
 Unity keeps the hierarchy inside a prefab instance fixed, so Ctrl+P / Alt+P skip objects inside one, with a warning in the Console. Open the prefab to change its hierarchy.
 
+## Middle mouse navigation
+
+| Gesture | Blender Like | Unity default |
+|---|---|---|
+| Middle mouse drag | Orbit around the pivot | Pan |
+| Shift + middle mouse drag | Pan: the scene follows the mouse at the pivot's depth | Pan |
+
+The orbit turns at the same speed and in the same directions as Unity's Alt + left drag. In a 2D or rotation-locked Scene view, a plain middle drag still pans.
+
+Everything else stays Unity's: Alt + left drag orbit, right drag to look and fly with WASD, the wheel to zoom, and middle drags with Alt or Ctrl. During a G / R / S, the middle button cancels it, like the right button.
+
+Turn it off with **Middle Mouse Navigation** in [Settings](#settings).
+
 ## Numpad views
 
 | Key | View |
@@ -187,6 +202,7 @@ This works with the Hierarchy window of Unity 6 (the one built with UI Toolkit).
 | **Axes: Unity** | Views use Unity's own orientation, the same as the Scene view gizmo. X / Y / Z use Unity's names: Y is up, Z forward |
 | **Z-Up Transform Inspector** (on by default) | With Blender axes, the [Transform Inspector](#z-up-transform-inspector) shows Blender's values |
 | **Auto Perspective** (on by default) | Views made orthographic by 1, 3 or 7 go back to perspective when orbited |
+| **Middle Mouse Navigation** (on by default) | [Middle drag orbits, Shift + middle drag pans](#middle-mouse-navigation) |
 
 Why Blender needs its own axis setting: a default Blender FBX export brings Blender's +Y to Unity's -Z. Unity's top view puts +Z at the top of the screen, so a plan drawn in Blender shows up upside down in it.
 
@@ -208,6 +224,7 @@ Clear their bindings in **Edit → Shortcuts** (the package covers both with H a
 - The package is one editor assembly (`UnityBlenderLike.Editor`). Nothing runs in builds or at runtime, and no scene or asset refers to it.
 - The keys are regular Shortcut Manager shortcuts in the Scene view context, so they show and rebind in **Edit → Shortcuts**.
 - While a modal transform runs, a handler placed ahead of the Shortcut Manager reads the keys, so the modal gets them before any other shortcut. It's removed when the transform ends.
+- Middle mouse navigation reads the mouse in the Scene view's `beforeSceneGui`, before the Scene view's own camera controls, and moves the view's pivot and rotation.
 - Another handler in the same place sends the package's keys to the Scene view under the mouse when another window has the focus. It matches the current bindings from **Edit → Shortcuts**, so rebinding carries over.
 - Confirming puts every object back where it started, records it for Undo, then applies the final transform, so the whole drag undoes in one step. Shift+D merges the duplicate into that same step.
 - Auto Perspective reads the Scene view's view animation (internal) to tell it apart from an orbit.

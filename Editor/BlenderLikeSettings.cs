@@ -19,6 +19,7 @@ namespace UnityBlenderLike
         private const string AxesKey = "UnityBlenderLike.Axes";
         private const string AutoPerspectiveKey = "UnityBlenderLike.AutoPerspective";
         private const string ZUpTransformInspectorKey = "UnityBlenderLike.ZUpTransformInspector";
+        private const string MiddleMouseNavigationKey = "UnityBlenderLike.MiddleMouseNavigation";
 
         public static AxisConvention Axes
         {
@@ -76,6 +77,16 @@ namespace UnityBlenderLike
             set => EditorUserSettings.SetConfigValue(ZUpTransformInspectorKey, value.ToString());
         }
 
+        /// <summary>
+        /// Blender's middle mouse in the Scene view: drag to orbit, Shift + drag to pan, instead of
+        /// Unity's middle mouse pan.
+        /// </summary>
+        public static bool MiddleMouseNavigation
+        {
+            get => EditorUserSettings.GetConfigValue(MiddleMouseNavigationKey) != bool.FalseString;
+            set => EditorUserSettings.SetConfigValue(MiddleMouseNavigationKey, value.ToString());
+        }
+
         public static bool ZUpTransformActive => Axes == AxisConvention.Blender && ZUpTransformInspector;
 
         [SettingsProvider]
@@ -84,7 +95,7 @@ namespace UnityBlenderLike
             return new SettingsProvider("Preferences/Blender Like", SettingsScope.User)
             {
                 label = "Blender Like",
-                keywords = new[] { "Blender", "numpad", "view", "move", "rotate", "scale", "axis", "perspective", "Z up", "Transform", "Inspector" },
+                keywords = new[] { "Blender", "numpad", "view", "move", "rotate", "scale", "axis", "perspective", "orbit", "pan", "middle mouse", "Z up", "Transform", "Inspector" },
                 guiHandler = _ =>
                 {
                     EditorGUIUtility.labelWidth = 160f;
@@ -106,6 +117,9 @@ namespace UnityBlenderLike
                     AutoPerspective = EditorGUILayout.Toggle(
                         new GUIContent("Auto Perspective", "A view made orthographic by Numpad 1 / 3 / 7 goes back to perspective when you orbit it."),
                         AutoPerspective);
+                    MiddleMouseNavigation = EditorGUILayout.Toggle(
+                        new GUIContent("Middle Mouse Navigation", "Middle mouse drag orbits and Shift + middle mouse drag pans, as in Blender, instead of Unity's middle mouse pan."),
+                        MiddleMouseNavigation);
                     EditorGUILayout.HelpBox(
                         "Blender: views and axis locks match Blender for models exported with the default FBX "
                         + "settings. Numpad 7 shows what Blender's top view shows, and Z is up.\n"
