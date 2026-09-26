@@ -12,7 +12,8 @@ namespace UnityBlenderLike
     /// around the pivot, full turns included (the built-in rotate gizmo projects the drag onto a
     /// fixed tangent, so it can't follow the mouse around the pivot).
     /// While transforming: G / R / S switch mode keeping what was done, X / Y / Z lock to a global
-    /// axis (press again for local, again to free it), digits type an exact value, Shift slows the
+    /// axis (press again for local, again to free it), Shift + X / Y / Z to everything but that
+    /// axis, digits type an exact value, Shift slows the
     /// mouse down for precision, Ctrl snaps, left
     /// click or Enter confirms as one undo step, right click or Esc cancels. Global axes follow the
     /// convention in Preferences > Blender Like. Respects the Pivot / Center toggle.
@@ -93,6 +94,12 @@ namespace UnityBlenderLike
 
         private static AxisSpace axisSpace;
         private static int axisIndex;
+
+        /// <summary>
+        /// Shift + X / Y / Z: the lock keeps everything but that axis, as in Blender. Moving slides
+        /// on the plane of the other two, scaling scales the other two, rotating turns around it.
+        /// </summary>
+        private static bool planeLock;
         private static string typedValue = string.Empty;
 
         private static bool previousWantsMouseMove;
@@ -166,6 +173,7 @@ namespace UnityBlenderLike
             accumulatedMouseAngle = 0f;
             axisSpace = AxisSpace.Free;
             axisIndex = 0;
+            planeLock = false;
             typedValue = string.Empty;
         }
 
@@ -336,9 +344,9 @@ namespace UnityBlenderLike
                 case KeyCode.R: SwitchMode(Mode.Rotate); break;
                 case KeyCode.S: SwitchMode(Mode.Scale); break;
 
-                case KeyCode.X: CycleAxis(0); break;
-                case KeyCode.Y: CycleAxis(1); break;
-                case KeyCode.Z: CycleAxis(2); break;
+                case KeyCode.X: CycleAxis(0, e.shift); break;
+                case KeyCode.Y: CycleAxis(1, e.shift); break;
+                case KeyCode.Z: CycleAxis(2, e.shift); break;
 
                 case KeyCode.Minus:
                 case KeyCode.KeypadMinus:
@@ -374,15 +382,17 @@ namespace UnityBlenderLike
             }
         }
 
-        private static void CycleAxis(int index)
+        /// <param name="plane">Shift was held: lock to everything but this axis.</param>
+        private static void CycleAxis(int index, bool plane)
         {
-            if (axisSpace == AxisSpace.Free || axisIndex != index)
+            if (axisSpace == AxisSpace.Free || axisIndex != index || planeLock != plane)
                 axisSpace = AxisSpace.Global;
             else if (axisSpace == AxisSpace.Global)
                 axisSpace = AxisSpace.Local;
             else
                 axisSpace = AxisSpace.Free;
             axisIndex = index;
+            planeLock = plane;
         }
 
         /// <summary>
@@ -390,11 +400,16 @@ namespace UnityBlenderLike
         /// by the same convention as the global ones, so with Blender axes local Z is the object's
         /// up, as the Z-up Transform Inspector shows it.
         /// </summary>
-        private static Vector3 AxisDirection()
+        private static Vector3 AxisDirection() => AxisDirection(axisIndex);
+
+        private static Vector3 AxisDirection(int index)
         {
-            Vector3 direction = BlenderLikeSettings.GlobalDirection(axisIndex);
+            Vector3 direction = BlenderLikeSettings.GlobalDirection(index);
             return axisSpace == AxisSpace.Local ? localAxesRotation * direction : direction;
         }
+
+        /// <summary>The first axis a plane lock keeps, where a typed value goes.</summary>
+        private static int FirstKeptAxis() => axisIndex == 0 ? 1 : 0;
 
         /// <summary>Unity's own axis for a component index of Transform.localScale.</summary>
         private static Vector3 UnityUnit(int index)
@@ -421,9 +436,10 @@ namespace UnityBlenderLike
         {
             if (TryGetTypedValue(out float typed))
             {
-                // Like Blender, a value typed with no axis locked moves along X.
-                Vector3 direction = axisSpace == AxisSpace.Free
-                    ? BlenderLikeSettings.GlobalDirection(0)
+                // Like Blender, a value typed with no axis locked moves along X, and with a plane
+                // lock along the first axis it keeps.
+                Vector3 direction = axisSpace == AxisSpace.Free ? BlenderLikeSettings.GlobalDirection(0)
+                    : planeLock ? AxisDirection(FirstKeptAxis())
                     : AxisDirection();
                 return direction * typed;
             }
@@ -431,7 +447,16 @@ namespace UnityBlenderLike
             if (!hasMouseStart)
                 return Vector3.zero;
 
-            if (axisSpace != AxisSpace.Free)
+            if (axisSpace != AxisSpace.Free && planeLock)
+            {
+                // Slide on the plane through the pivot that leaves out the locked axis, unless it's
+                // seen edge-on.
+                var lockedPlane = new Plane(AxisDirection(), pivot);
+                if (Mathf.Abs(Vector3.Dot(currentRay.direction, AxisDirection())) > 0.05f
+                    && lockedPlane.Raycast(startRay, out float fromHit) && lockedPlane.Raycast(currentRay, out float toHit))
+                    return SnapVector(currentRay.GetPoint(toHit) - startRay.GetPoint(fromHit));
+            }
+            else if (axisSpace != AxisSpace.Free)
             {
                 Vector3 direction = AxisDirection();
                 if (TryClosestOnAxis(startRay, direction, out float from) && TryClosestOnAxis(currentRay, direction, out float to))
@@ -447,14 +472,19 @@ namespace UnityBlenderLike
             if (!plane.Raycast(startRay, out float startHit) || !plane.Raycast(currentRay, out float currentHit))
                 return Vector3.zero;
             Vector3 delta = currentRay.GetPoint(currentHit) - startRay.GetPoint(startHit);
+
+            // The locked axis or plane seen edge-on: the view plane, kept to the lock.
             if (axisSpace != AxisSpace.Free)
-                delta = Vector3.Project(delta, AxisDirection());
-            if (snapping)
-            {
-                Vector3 step = EditorSnapSettings.move;
-                delta = new Vector3(Snap(delta.x, step.x), Snap(delta.y, step.y), Snap(delta.z, step.z));
-            }
-            return delta;
+                delta = planeLock ? Vector3.ProjectOnPlane(delta, AxisDirection()) : Vector3.Project(delta, AxisDirection());
+            return SnapVector(delta);
+        }
+
+        private static Vector3 SnapVector(Vector3 delta)
+        {
+            if (!snapping)
+                return delta;
+            Vector3 step = EditorSnapSettings.move;
+            return new Vector3(Snap(delta.x, step.x), Snap(delta.y, step.y), Snap(delta.z, step.z));
         }
 
         /// <summary>Point on the axis through the pivot closest to the ray, as a distance along the axis.</summary>
@@ -518,7 +548,8 @@ namespace UnityBlenderLike
 
         /// <summary>
         /// Unity can't scale an object along an arbitrary world axis (that would shear it), so a
-        /// locked scale acts on the object's local axis that runs closest to the locked one.
+        /// locked scale acts on the object's local axis that runs closest to the locked one; a plane
+        /// lock scales the other two.
         /// </summary>
         private static Vector3 ScaledLocalScale(TransformState state, float factor)
         {
@@ -539,7 +570,11 @@ namespace UnityBlenderLike
             }
 
             Vector3 scale = state.LocalScale;
-            scale[closest] *= factor;
+            for (int i = 0; i < 3; i++)
+            {
+                if ((i == closest) != planeLock)
+                    scale[i] *= factor;
+            }
             return scale;
         }
 
@@ -548,7 +583,8 @@ namespace UnityBlenderLike
             if (axisSpace == AxisSpace.Free)
                 return offset * factor;
             Vector3 direction = AxisDirection();
-            return offset + direction * (Vector3.Dot(offset, direction) * (factor - 1f));
+            Vector3 along = direction * Vector3.Dot(offset, direction);
+            return planeLock ? along + (offset - along) * factor : offset + along * (factor - 1f);
         }
 
         // ---- Applying ----
@@ -751,10 +787,16 @@ namespace UnityBlenderLike
         {
             if (axisSpace != AxisSpace.Free)
             {
-                Vector3 direction = AxisDirection();
-                Handles.color = AxisColor(BlenderLikeSettings.GlobalDirection(axisIndex));
+                // A line for the locked axis, or for each of the two a plane lock keeps.
                 float length = HandleUtility.GetHandleSize(pivot) * 1000f;
-                Handles.DrawLine(pivot - direction * length, pivot + direction * length);
+                for (int i = 0; i < 3; i++)
+                {
+                    if (planeLock == (i == axisIndex))
+                        continue;
+                    Vector3 direction = AxisDirection(i);
+                    Handles.color = AxisColor(BlenderLikeSettings.GlobalDirection(i));
+                    Handles.DrawLine(pivot - direction * length, pivot + direction * length);
+                }
             }
 
             Handles.BeginGUI();
@@ -769,7 +811,7 @@ namespace UnityBlenderLike
 
             string axisLabel = axisSpace == AxisSpace.Free
                 ? (mode == Mode.Rotate ? "view" : "free")
-                : "XYZ"[axisIndex] + (axisSpace == AxisSpace.Global ? " global" : " local");
+                : (planeLock ? "not " : "") + "XYZ"[axisIndex] + (axisSpace == AxisSpace.Global ? " global" : " local");
             string valueLabel;
             if (typedValue.Length > 0)
                 valueLabel = "[" + typedValue + "]";
@@ -781,9 +823,9 @@ namespace UnityBlenderLike
                 valueLabel = ScaleFactor().ToString("0.###", CultureInfo.InvariantCulture);
 
             string text = mode + " " + valueLabel + "   axis: " + axisLabel
-                + "      G/R/S mode · X/Y/Z axis · digits value · Shift precision · Ctrl snap · Enter/click confirm · Esc/right click cancel";
+                + "      G/R/S mode · X/Y/Z axis · Shift+X/Y/Z plane · digits value · Shift precision · Ctrl snap · Enter/click confirm · Esc/right click cancel";
 
-            var rect = new Rect(8f, viewSize.y - 30f, 880f, 22f);
+            var rect = new Rect(8f, viewSize.y - 30f, 1000f, 22f);
             GUI.Box(rect, GUIContent.none, EditorStyles.helpBox);
             GUI.Label(new Rect(rect.x + 6f, rect.y + 2f, rect.width - 12f, rect.height - 4f), text, EditorStyles.boldLabel);
             Handles.EndGUI();

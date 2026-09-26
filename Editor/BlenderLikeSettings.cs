@@ -20,6 +20,7 @@ namespace UnityBlenderLike
         private const string AutoPerspectiveKey = "UnityBlenderLike.AutoPerspective";
         private const string ZUpTransformInspectorKey = "UnityBlenderLike.ZUpTransformInspector";
         private const string MiddleMouseNavigationKey = "UnityBlenderLike.MiddleMouseNavigation";
+        private const string AltDragDuplicateKey = "UnityBlenderLike.AltDragDuplicate";
 
         public static AxisConvention Axes
         {
@@ -87,6 +88,13 @@ namespace UnityBlenderLike
             set => EditorUserSettings.SetConfigValue(MiddleMouseNavigationKey, value.ToString());
         }
 
+        /// <summary>Alt + drag on the move gizmo duplicates the selection and moves the copy, like Unreal.</summary>
+        public static bool AltDragDuplicate
+        {
+            get => EditorUserSettings.GetConfigValue(AltDragDuplicateKey) != bool.FalseString;
+            set => EditorUserSettings.SetConfigValue(AltDragDuplicateKey, value.ToString());
+        }
+
         public static bool ZUpTransformActive => Axes == AxisConvention.Blender && ZUpTransformInspector;
 
         [SettingsProvider]
@@ -95,7 +103,7 @@ namespace UnityBlenderLike
             return new SettingsProvider("Preferences/Blender Like", SettingsScope.User)
             {
                 label = "Blender Like",
-                keywords = new[] { "Blender", "numpad", "view", "move", "rotate", "scale", "axis", "perspective", "orbit", "pan", "middle mouse", "Z up", "Transform", "Inspector" },
+                keywords = new[] { "Blender", "numpad", "view", "move", "rotate", "scale", "axis", "perspective", "orbit", "pan", "middle mouse", "duplicate", "Z up", "Transform", "Inspector" },
                 guiHandler = _ =>
                 {
                     EditorGUIUtility.labelWidth = 160f;
@@ -120,6 +128,9 @@ namespace UnityBlenderLike
                     MiddleMouseNavigation = EditorGUILayout.Toggle(
                         new GUIContent("Middle Mouse Navigation", "Middle mouse drag orbits and Shift + middle mouse drag pans, as in Blender, instead of Unity's middle mouse pan."),
                         MiddleMouseNavigation);
+                    AltDragDuplicate = EditorGUILayout.Toggle(
+                        new GUIContent("Alt + Drag Duplicates", "Alt + drag on the move gizmo's arrows duplicates the selection and moves the copy, like Unreal."),
+                        AltDragDuplicate);
                     EditorGUILayout.HelpBox(
                         "Blender: views and axis locks match Blender for models exported with the default FBX "
                         + "settings. Numpad 7 shows what Blender's top view shows, and Z is up.\n"
