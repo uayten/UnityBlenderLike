@@ -3,7 +3,8 @@
 Makes the Unity Scene view feel like Blender, as an editor-only package you can keep to yourself in a shared project:
 
 - **Modal G / R / S**: move, rotate and scale follow the mouse until you click, and rotation follows the cursor around the pivot, full turns included, instead of Unity's gizmo that stops following once you circle the pivot
-- **Axis locks and typed values**: X / Y / Z lock an axis (again for local), type `90` for an exact value, Ctrl snaps, G / R / S switch mode without confirming, click to confirm, right click to cancel
+- **Axis locks and typed values**: X / Y / Z lock an axis (again for local), type `90` for an exact value, Shift for precision, Ctrl snaps, G / R / S switch mode without confirming, click to confirm, right click to cancel
+- **Keys follow the mouse**: with the mouse over the Scene view, the shortcuts act there even right after clicking in the Hierarchy, like Blender's areas
 - **Blender's object keys**: H / Shift+H / Alt+H hide and reveal, Alt+G / Alt+R / Alt+S clear transforms, Shift+D duplicates and moves, Ctrl+P / Alt+P parent and unparent, A / Alt+A select all and none
 - **Numpad views**: 1 / 3 / 7 for front, right and top, Ctrl for the opposite side, 5 to toggle orthographic, `.` to frame the selection, / for local view, and Auto Perspective when orbiting
 - **Drag over Hierarchy arrows**: press an expand arrow and drag up or down, and every item you pass opens (or closes) too, like Blender's Outliner
@@ -64,7 +65,9 @@ Delete the `Assets/UnityBlenderLike` folder, or remove the package in the Packag
 
 ## Shortcuts
 
-All shortcuts work with the Scene view focused and are listed under **Blender Like** in **Edit → Shortcuts**, where they can be rebound. In other windows, the same keys keep doing what Unity does there.
+All shortcuts are listed under **Blender Like** in **Edit → Shortcuts**, where they can be rebound. They act in the Scene view, and in other windows the same keys keep doing what Unity does there.
+
+Like Blender, the keys go to the view under the mouse: select something in the Hierarchy, move the mouse over the Scene view and press G, and it moves, without clicking the Scene view first. The Scene view takes the keyboard focus and the shortcut runs. While you type in a text field (renaming, searching), keys stay there.
 
 | Key | Action | Unity default it overrides in the Scene view |
 |---|---|---|
@@ -93,6 +96,7 @@ Select something, point at the Scene view and press G, R or S:
 | X / Y / Z | Lock to the global axis; press again for the local axis (of the active object), again to unlock. A line through the pivot, in Unity's color for the axis it runs along, shows the lock |
 | Digits, `.`, `-`, Backspace | Type an exact value: meters for move (along X when no axis is locked), degrees for rotate, factor for scale |
 | G / R / S | Switch to another transform, keeping what the previous one did |
+| Shift | Precision: the mouse counts a tenth as much while held, for move, rotate and scale |
 | Ctrl | Snap: Unity's grid snap step for move, 5° for rotate, 0.1 for scale |
 | Left click / Enter | Confirm, as one undo step |
 | Right click / Esc | Cancel and go back to where it started |
@@ -204,6 +208,7 @@ Clear their bindings in **Edit → Shortcuts** (the package covers both with H a
 - The package is one editor assembly (`UnityBlenderLike.Editor`). Nothing runs in builds or at runtime, and no scene or asset refers to it.
 - The keys are regular Shortcut Manager shortcuts in the Scene view context, so they show and rebind in **Edit → Shortcuts**.
 - While a modal transform runs, a handler placed ahead of the Shortcut Manager reads the keys, so the modal gets them before any other shortcut. It's removed when the transform ends.
+- Another handler in the same place sends the package's keys to the Scene view under the mouse when another window has the focus. It matches the current bindings from **Edit → Shortcuts**, so rebinding carries over.
 - Confirming puts every object back where it started, records it for Undo, then applies the final transform, so the whole drag undoes in one step. Shift+D merges the duplicate into that same step.
 - Auto Perspective reads the Scene view's view animation (internal) to tell it apart from an orbit.
 - The Hierarchy drag listens to the Hierarchy window's pointer events before its rows see them, and opens or closes items through the Hierarchy view's expand and collapse methods.
@@ -215,7 +220,7 @@ Written and tested on Unity 6 (6000.6) on Windows. It only uses editor APIs that
 
 Two features read internal Unity fields. If a future version removes them:
 
-- `EditorApplication.globalEventHandler`: moving the mouse and confirming or cancelling with a click still work, but the keys during a modal transform (axis locks, typed values, Enter, Esc) go to Unity's own shortcuts instead.
+- `EditorApplication.globalEventHandler`: moving the mouse and confirming or cancelling with a click still work, but the keys during a modal transform (axis locks, typed values, Enter, Esc) go to Unity's own shortcuts instead, and keys stop following the mouse (click the Scene view first).
 - The Scene view's view animation: Auto Perspective waits a fixed second after a view key before it starts watching for orbits.
 - The Hierarchy window's row items (`Unity.Hierarchy.HierarchyViewItem`): if they change, dragging over the arrows stops doing anything and a plain click works as in stock Unity.
 - `UnityEditor.TransformInspector`, Unity's own Transform Inspector: with the Z-up Inspector off, the Transform shows its raw fields instead (rotation as a quaternion).

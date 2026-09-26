@@ -12,7 +12,8 @@ namespace UnityBlenderLike
     /// around the pivot, full turns included (the built-in rotate gizmo projects the drag onto a
     /// fixed tangent, so it can't follow the mouse around the pivot).
     /// While transforming: G / R / S switch mode keeping what was done, X / Y / Z lock to a global
-    /// axis (press again for local, again to free it), digits type an exact value, Ctrl snaps, left
+    /// axis (press again for local, again to free it), digits type an exact value, Shift slows the
+    /// mouse down for precision, Ctrl snaps, left
     /// click or Enter confirms as one undo step, right click or Esc cancels. Global axes follow the
     /// convention in Preferences > Blender Like. Respects the Pivot / Center toggle.
     /// </summary>
@@ -30,6 +31,9 @@ namespace UnityBlenderLike
         /// </summary>
         private const double ClickReleaseWaitSeconds = 1.0;
         private const float ScaleSnapStep = 0.1f;
+
+        /// <summary>How much of the mouse movement counts while Shift is held, like Blender's precision mode.</summary>
+        private const float PrecisionFactor = 0.1f;
 
         // Internal field the Shortcut Manager listens on. Putting our handler first lets the modal
         // swallow keys (X is Delete, digits switch views...) before any shortcut fires.
@@ -61,7 +65,10 @@ namespace UnityBlenderLike
 
         private static bool hasMouseStart;
         private static Vector2 mouseStart;
+        // Where the transform reads the mouse. It follows the real mouse, but moves a tenth as
+        // far while Shift is held, so every mode slows down the same way.
         private static Vector2 mousePosition;
+        private static Vector2 lastRealMouse;
         private static Vector2 pivotGui;
         private static Ray startRay;
         private static Ray currentRay;
@@ -178,6 +185,7 @@ namespace UnityBlenderLike
             {
                 mouseStart = e.mousePosition;
                 mousePosition = mouseStart;
+                lastRealMouse = mouseStart;
                 startRay = HandleUtility.GUIPointToWorldRay(mouseStart);
                 currentRay = startRay;
                 scaleStartDistance = Vector2.Distance(mouseStart, pivotGui);
@@ -193,10 +201,12 @@ namespace UnityBlenderLike
 
                 case EventType.MouseMove:
                 case EventType.MouseDrag:
-                    float angle = MouseAngle(e.mousePosition);
+                    Vector2 mouseDelta = e.mousePosition - lastRealMouse;
+                    lastRealMouse = e.mousePosition;
+                    mousePosition += e.shift ? mouseDelta * PrecisionFactor : mouseDelta;
+                    float angle = MouseAngle(mousePosition);
                     accumulatedMouseAngle += Mathf.DeltaAngle(lastMouseAngle, angle);
                     lastMouseAngle = angle;
-                    mousePosition = e.mousePosition;
                     currentRay = HandleUtility.GUIPointToWorldRay(mousePosition);
                     snapping = e.control;
                     Apply();
@@ -704,10 +714,10 @@ namespace UnityBlenderLike
                 valueLabel = ScaleFactor().ToString("0.###", CultureInfo.InvariantCulture);
 
             string text = mode + " " + valueLabel + "   axis: " + axisLabel
-                + "      G/R/S mode · X/Y/Z axis · digits value · Ctrl snap · Enter/click confirm · Esc/right click cancel";
+                + "      G/R/S mode · X/Y/Z axis · digits value · Shift precision · Ctrl snap · Enter/click confirm · Esc/right click cancel";
 
             float height = sceneView.camera.pixelHeight / EditorGUIUtility.pixelsPerPoint;
-            var rect = new Rect(8f, height - 30f, 780f, 22f);
+            var rect = new Rect(8f, height - 30f, 880f, 22f);
             GUI.Box(rect, GUIContent.none, EditorStyles.helpBox);
             GUI.Label(new Rect(rect.x + 6f, rect.y + 2f, rect.width - 12f, rect.height - 4f), text, EditorStyles.boldLabel);
             Handles.EndGUI();

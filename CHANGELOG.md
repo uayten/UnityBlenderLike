@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0] - 2026-09-26
+
+### Added
+
+- Keys follow the mouse: with the mouse over a Scene view, the package's shortcuts act there even while another window (the Hierarchy, say) has the keyboard focus. Text fields keep their keys.
+- Shift during G / R / S: precision mode, the mouse counts a tenth as much.
+
 ## [0.4.1] - 2026-09-26
 
 ### Fixed
