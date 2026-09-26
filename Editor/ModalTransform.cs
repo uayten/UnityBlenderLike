@@ -35,6 +35,12 @@ namespace UnityBlenderLike
         /// <summary>How much of the mouse movement counts while Shift is held, like Blender's precision mode.</summary>
         private const float PrecisionFactor = 0.1f;
 
+        /// <summary>
+        /// Distance from the Scene view's edge at which the cursor jumps to the opposite side, like
+        /// Blender's continuous grab: the Scene view only hears the mouse while it's over it.
+        /// </summary>
+        private const float WrapMargin = 12f;
+
         // Internal field the Shortcut Manager listens on. Putting our handler first lets the modal
         // swallow keys (X is Delete, digits switch views...) before any shortcut fires.
         private static readonly FieldInfo GlobalEventHandlerField = typeof(EditorApplication).GetField(
@@ -85,6 +91,7 @@ namespace UnityBlenderLike
         private static string typedValue = string.Empty;
 
         private static bool previousWantsMouseMove;
+        private static bool previousWantsMouseEnterLeave;
         private static bool previousToolsHidden;
 
         private struct TransformState
@@ -134,6 +141,8 @@ namespace UnityBlenderLike
 
             previousWantsMouseMove = view.wantsMouseMove;
             view.wantsMouseMove = true;
+            previousWantsMouseEnterLeave = view.wantsMouseEnterLeaveWindow;
+            view.wantsMouseEnterLeaveWindow = true;
             previousToolsHidden = Tools.hidden;
             Tools.hidden = true;
 
@@ -206,7 +215,15 @@ namespace UnityBlenderLike
                 case EventType.MouseDrag:
                     Vector2 mouseDelta = e.mousePosition - lastRealMouse;
                     lastRealMouse = e.mousePosition;
+
+                    // A jump across half the view is a cursor wrap that events from before it
+                    // are still catching up with, not a real movement.
+                    Vector2 viewSize = ViewSize();
+                    if (Mathf.Abs(mouseDelta.x) > viewSize.x * 0.5f || Mathf.Abs(mouseDelta.y) > viewSize.y * 0.5f)
+                        mouseDelta = Vector2.zero;
+
                     mousePosition += e.shift ? mouseDelta * PrecisionFactor : mouseDelta;
+                    WrapCursor(e.mousePosition);
                     float angle = MouseAngle(mousePosition);
                     accumulatedMouseAngle += Mathf.DeltaAngle(lastMouseAngle, angle);
                     lastMouseAngle = angle;
@@ -234,10 +251,43 @@ namespace UnityBlenderLike
                     e.Use();
                     break;
 
+                case EventType.MouseLeaveWindow:
+                    // Moved out faster than the edge margin caught it: bring it back from where it left.
+                    WrapCursor(e.mousePosition);
+                    break;
+
                 case EventType.Repaint:
                     DrawOverlay();
                     break;
             }
+        }
+
+        /// <summary>Size of the Scene view's camera area, in GUI points.</summary>
+        private static Vector2 ViewSize()
+        {
+            Camera camera = sceneView.camera;
+            return new Vector2(camera.pixelWidth, camera.pixelHeight) / EditorGUIUtility.pixelsPerPoint;
+        }
+
+        /// <summary>
+        /// Near an edge of the Scene view, moves the cursor to the opposite edge. The transform
+        /// reads how far the mouse moves, not where it is, so it goes on without a jump.
+        /// </summary>
+        private static void WrapCursor(Vector2 guiPosition)
+        {
+            Vector2 size = ViewSize();
+            Vector2 target = guiPosition;
+            if (guiPosition.x < WrapMargin)
+                target.x = size.x - WrapMargin * 2f;
+            else if (guiPosition.x > size.x - WrapMargin)
+                target.x = WrapMargin * 2f;
+            if (guiPosition.y < WrapMargin)
+                target.y = size.y - WrapMargin * 2f;
+            else if (guiPosition.y > size.y - WrapMargin)
+                target.y = WrapMargin * 2f;
+
+            if (target != guiPosition && CursorWarp.TryWarp(target))
+                lastRealMouse = target;
         }
 
         private static void OnGlobalEvent()
@@ -597,6 +647,7 @@ namespace UnityBlenderLike
             if (sceneView != null)
             {
                 sceneView.wantsMouseMove = previousWantsMouseMove;
+                sceneView.wantsMouseEnterLeaveWindow = previousWantsMouseEnterLeave;
                 sceneView.Repaint();
             }
             Tools.hidden = previousToolsHidden;
@@ -697,6 +748,9 @@ namespace UnityBlenderLike
             }
 
             Handles.BeginGUI();
+            Vector2 viewSize = ViewSize();
+            EditorGUIUtility.AddCursorRect(new Rect(Vector2.zero, viewSize),
+                mode == Mode.Move ? MouseCursor.MoveArrow : mode == Mode.Rotate ? MouseCursor.RotateArrow : MouseCursor.ScaleArrow);
             if (mode != Mode.Move)
             {
                 Handles.color = Color.white;
@@ -719,8 +773,7 @@ namespace UnityBlenderLike
             string text = mode + " " + valueLabel + "   axis: " + axisLabel
                 + "      G/R/S mode · X/Y/Z axis · digits value · Shift precision · Ctrl snap · Enter/click confirm · Esc/right click cancel";
 
-            float height = sceneView.camera.pixelHeight / EditorGUIUtility.pixelsPerPoint;
-            var rect = new Rect(8f, height - 30f, 880f, 22f);
+            var rect = new Rect(8f, viewSize.y - 30f, 880f, 22f);
             GUI.Box(rect, GUIContent.none, EditorStyles.helpBox);
             GUI.Label(new Rect(rect.x + 6f, rect.y + 2f, rect.width - 12f, rect.height - 4f), text, EditorStyles.boldLabel);
             Handles.EndGUI();

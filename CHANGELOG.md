@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0] - 2026-09-26
+
+### Added
+
+- Continuous grab during G / R / S: the cursor jumps to the opposite edge of the Scene view instead of leaving it, and the transform goes on (Windows and macOS).
+- The cursor shows a move, rotate or scale arrow during G / R / S.
+
 ## [0.6.0] - 2026-09-26
 
 ### Added

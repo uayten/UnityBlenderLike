@@ -103,6 +103,8 @@ Select something, point at the Scene view and press G, R or S:
 | Left click / Enter | Confirm, as one undo step |
 | Right click / Esc | Cancel and go back to where it started |
 
+Like Blender's continuous grab, the cursor never runs out of room: when it reaches an edge of the Scene view, it jumps to the opposite edge and the transform goes on without a jump. The dotted line to the pivot follows where the mouse would be, past the edge. While transforming, the cursor shows a move, rotate or scale arrow. The jump uses the operating system's cursor call (Windows and macOS); on Linux the cursor stops at the edge as in stock Unity.
+
 The pivot follows Unity's **Pivot / Center** toggle in the toolbar. With Center, several objects swing around and scale from their common center; with Pivot, each turns and grows around its own origin. A child whose parent is also selected moves once, with its parent.
 
 Unity can't scale an object along an arbitrary world axis without shearing it, so a scale locked to an axis acts on the object's own axis that runs closest to it.
