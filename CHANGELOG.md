@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.0] - 2026-09-26
+
+### Changed
+
+- Keys follow the mouse for every key, not just this package's shortcuts: a key pressed over a Scene view goes there, so Unity's and the project's Scene view shortcuts answer too, and the window that had the focus no longer acts on it (the Hierarchy's End jumped to its last item and lost the selection).
+
 ## [0.7.1] - 2026-09-26
 
 ### Fixed

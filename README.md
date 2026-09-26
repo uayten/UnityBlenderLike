@@ -4,7 +4,7 @@ Makes the Unity Scene view feel like Blender, as an editor-only package you can 
 
 - **Modal G / R / S**: move, rotate and scale follow the mouse until you click, and rotation follows the cursor around the pivot, full turns included, instead of Unity's gizmo that stops following once you circle the pivot
 - **Axis locks and typed values**: X / Y / Z lock an axis (again for local), type `90` for an exact value, Shift for precision, Ctrl snaps, G / R / S switch mode without confirming, click to confirm, right click to cancel
-- **Keys follow the mouse**: with the mouse over the Scene view, the shortcuts act there even right after clicking in the Hierarchy, like Blender's areas
+- **Keys follow the mouse**: with the mouse over the Scene view, every key goes there, even right after clicking in the Hierarchy, like Blender's areas
 - **Blender's object keys**: H / Shift+H / Alt+H hide and reveal, Alt+G / Alt+R / Alt+S clear transforms, Shift+D duplicates and moves, Ctrl+P / Alt+P parent and unparent, A / Alt+A select all and none
 - **Blender's middle mouse**: middle drag orbits around the pivot, Shift + middle drag pans
 - **Numpad views**: 1 / 3 / 7 for front, right and top, Ctrl for the opposite side, 5 to toggle orthographic, `.` to frame the selection, / for local view, and Auto Perspective when orbiting
@@ -69,7 +69,7 @@ Delete the `Assets/UnityBlenderLike` folder, or remove the package in the Packag
 
 All shortcuts are listed under **Blender Like** in **Edit → Shortcuts**, where they can be rebound. They act in the Scene view, and in other windows the same keys keep doing what Unity does there.
 
-Like Blender, the keys go to the view under the mouse: select something in the Hierarchy, move the mouse over the Scene view and press G, and it moves, without clicking the Scene view first. The Scene view takes the keyboard focus and the shortcut runs. While you type in a text field (renaming, searching), keys stay there.
+Like Blender, keys go to the view under the mouse: select something in the Hierarchy, move the mouse over the Scene view and press G, and it moves, without clicking the Scene view first. This holds for every key, not just this package's: the Scene view takes the keyboard focus and gets the key, so Unity's and your project's own Scene view shortcuts answer too, and the Hierarchy doesn't act on it (End doesn't jump to its last item, for one). While you type in a text field (renaming, searching), keys stay there, and modifier keys alone (Shift, Ctrl, Alt) never move the focus.
 
 | Key | Action | Unity default it overrides in the Scene view |
 |---|---|---|
@@ -227,7 +227,7 @@ Clear their bindings in **Edit → Shortcuts** (the package covers both with H a
 - The keys are regular Shortcut Manager shortcuts in the Scene view context, so they show and rebind in **Edit → Shortcuts**.
 - While a modal transform runs, a handler placed ahead of the Shortcut Manager reads the keys, so the modal gets them before any other shortcut. It's removed when the transform ends.
 - Middle mouse navigation reads the mouse in the Scene view's `beforeSceneGui`, before the Scene view's own camera controls, and moves the view's pivot and rotation.
-- Another handler in the same place sends the package's keys to the Scene view under the mouse when another window has the focus. It matches the current bindings from **Edit → Shortcuts**, so rebinding carries over.
+- Another handler in the same place takes a key pressed over a Scene view while another window has the focus, and sends it to the Scene view instead, after giving it the focus.
 - Confirming puts every object back where it started, records it for Undo, then applies the final transform, so the whole drag undoes in one step. Shift+D merges the duplicate into that same step.
 - Auto Perspective reads the Scene view's view animation (internal) to tell it apart from an orbit.
 - The Hierarchy drag listens to the Hierarchy window's pointer events before its rows see them, and opens or closes items through the Hierarchy view's expand and collapse methods.
