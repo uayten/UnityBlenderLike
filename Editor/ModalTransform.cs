@@ -23,6 +23,12 @@ namespace UnityBlenderLike
         private enum AxisSpace { Free, Global, Local }
 
         private const float RotateSnapStep = 5f;
+
+        /// <summary>
+        /// How long to wait for the release of the click that ended the modal. The release can land
+        /// in another window; past this, the Scene view goes back to normal clicks.
+        /// </summary>
+        private const double ClickReleaseWaitSeconds = 1.0;
         private const float ScaleSnapStep = 0.1f;
 
         // Internal field the Shortcut Manager listens on. Putting our handler first lets the modal
@@ -34,6 +40,8 @@ namespace UnityBlenderLike
 
         private static bool active;
         private static bool awaitingMouseUp;
+        private static double awaitingSince;
+        private static int clickControlId;
         private static Mode mode;
         private static SceneView sceneView;
         private static Transform[] targets;
@@ -90,8 +98,10 @@ namespace UnityBlenderLike
         /// </param>
         public static void Begin(Mode newMode, SceneView view, int undoGroup = -1)
         {
-            if (active || awaitingMouseUp)
+            if (active)
                 return;
+            if (awaitingMouseUp)
+                Unsubscribe();
 
             if (view == null)
                 view = SceneView.lastActiveSceneView;
@@ -156,18 +166,7 @@ namespace UnityBlenderLike
 
             if (awaitingMouseUp)
             {
-                // Swallow the release of the click that ended the modal, so it doesn't select
-                // something or open the context menu.
-                if (e.type == EventType.MouseUp || e.type == EventType.ContextClick)
-                {
-                    e.Use();
-                    if (e.type == EventType.MouseUp)
-                        Unsubscribe();
-                }
-                else if (e.type == EventType.MouseDown || e.type == EventType.MouseDrag)
-                {
-                    e.Use();
-                }
+                SwallowClickRelease(e);
                 return;
             }
 
@@ -209,7 +208,12 @@ namespace UnityBlenderLike
                         Confirm();
                     else
                         Cancel();
+
+                    // Holding the click keeps its release coming to this view, even over another window.
                     awaitingMouseUp = true;
+                    awaitingSince = EditorApplication.timeSinceStartup;
+                    clickControlId = controlId;
+                    GUIUtility.hotControl = controlId;
                     e.Use();
                     break;
 
@@ -585,8 +589,60 @@ namespace UnityBlenderLike
             Tools.hidden = previousToolsHidden;
         }
 
+        /// <summary>
+        /// Swallows the release of the click that ended the modal, so it doesn't select something,
+        /// and after a right click the context menu that follows it. Stops waiting on a new click
+        /// or after <see cref="ClickReleaseWaitSeconds"/>, so a release that never comes can't
+        /// leave the Scene view ignoring clicks.
+        /// </summary>
+        private static void SwallowClickRelease(Event e)
+        {
+            bool expired = EditorApplication.timeSinceStartup - awaitingSince > ClickReleaseWaitSeconds;
+            switch (e.type)
+            {
+                case EventType.MouseUp:
+                    e.Use();
+                    ReleaseClick();
+                    if (e.button == 1)
+                        awaitingSince = EditorApplication.timeSinceStartup;
+                    else
+                        Unsubscribe();
+                    break;
+
+                case EventType.ContextClick:
+                    e.Use();
+                    Unsubscribe();
+                    break;
+
+                case EventType.MouseDrag:
+                    if (expired)
+                        Unsubscribe();
+                    else
+                        e.Use();
+                    break;
+
+                case EventType.MouseDown:
+                    // A new click: the release was missed. Let this one through.
+                    Unsubscribe();
+                    break;
+
+                default:
+                    if (expired)
+                        Unsubscribe();
+                    break;
+            }
+        }
+
+        private static void ReleaseClick()
+        {
+            if (clickControlId != 0 && GUIUtility.hotControl == clickControlId)
+                GUIUtility.hotControl = 0;
+            clickControlId = 0;
+        }
+
         private static void Unsubscribe()
         {
+            ReleaseClick();
             awaitingMouseUp = false;
             SceneView.duringSceneGui -= OnSceneGUI;
         }

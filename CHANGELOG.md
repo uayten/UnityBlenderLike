@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.1] - 2026-09-26
+
+### Fixed
+
+- The Scene view could stop taking clicks, and G / R / S stop starting, after a modal transform was confirmed or cancelled with a click whose release never reached the Scene view. The click is now held until its release, a new click or one second, whichever comes first.
+
 ## [0.4.0] - 2026-09-25
 
 ### Added
