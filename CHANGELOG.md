@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.1] - 2026-09-26
+
+### Fixed
+
+- Keys follow the mouse from UI Toolkit windows too. Unity 6's Hierarchy gets keys straight from its panel, not through the Shortcut Manager's handler, so End there still jumped to its last item instead of reaching the Scene view.
+- The Game view keeps its keys even with the mouse over the Scene view.
+- No more UAC0005 warning: the Hierarchy types are found by assembly-qualified name instead of scanning `AppDomain.GetAssemblies()`.
+
 ## [0.8.0] - 2026-09-26
 
 ### Changed

@@ -227,7 +227,7 @@ Clear their bindings in **Edit → Shortcuts** (the package covers both with H a
 - The keys are regular Shortcut Manager shortcuts in the Scene view context, so they show and rebind in **Edit → Shortcuts**.
 - While a modal transform runs, a handler placed ahead of the Shortcut Manager reads the keys, so the modal gets them before any other shortcut. It's removed when the transform ends.
 - Middle mouse navigation reads the mouse in the Scene view's `beforeSceneGui`, before the Scene view's own camera controls, and moves the view's pivot and rotation.
-- Another handler in the same place takes a key pressed over a Scene view while another window has the focus, and sends it to the Scene view instead, after giving it the focus.
+- Keys follow the mouse through two listeners, because keys reach windows two ways: IMGUI windows get them through the Shortcut Manager's handler (a second handler goes ahead of it), and UI Toolkit windows, like Unity 6's Hierarchy, get them straight from their panel (a listener on each panel's root takes them first). Either one gives the Scene view the focus and sends it the key. The Game view keeps its keys, so playing isn't interrupted when the mouse drifts over the Scene view.
 - Confirming puts every object back where it started, records it for Undo, then applies the final transform, so the whole drag undoes in one step. Shift+D merges the duplicate into that same step.
 - Auto Perspective reads the Scene view's view animation (internal) to tell it apart from an orbit.
 - The Hierarchy drag listens to the Hierarchy window's pointer events before its rows see them, and opens or closes items through the Hierarchy view's expand and collapse methods.

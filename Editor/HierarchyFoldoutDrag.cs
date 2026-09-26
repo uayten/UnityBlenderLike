@@ -10,8 +10,8 @@ namespace UnityBlenderLike
     /// <summary>
     /// Blender's Outliner drag on disclosure triangles, for Unity's Hierarchy: press an item's
     /// expand arrow and drag up or down, and every item the mouse passes over gets the same state
-    /// (all expanding, or all collapsing). Works with the UI Toolkit Hierarchy of Unity 6; the
-    /// types are looked up by name, so on versions without it nothing happens.
+    /// (all expanding, or all collapsing). Works with the UI Toolkit Hierarchy of Unity 6; its
+    /// types are looked up by assembly-qualified name, so on versions without it nothing happens.
     /// </summary>
     [InitializeOnLoad]
     internal static class HierarchyFoldoutDrag
@@ -23,8 +23,8 @@ namespace UnityBlenderLike
         /// <summary>Distance between the points checked along a fast drag, so no row is skipped.</summary>
         private const float PickStep = 4f;
 
-        private static readonly Type WindowType = FindType("Unity.Hierarchy.Editor.HierarchyWindow");
-        private static readonly Type ItemType = FindType("Unity.Hierarchy.HierarchyViewItem");
+        private static readonly Type WindowType = Type.GetType("Unity.Hierarchy.Editor.HierarchyWindow, UnityEditor.HierarchyModule");
+        private static readonly Type ItemType = Type.GetType("Unity.Hierarchy.HierarchyViewItem, UnityEngine.HierarchyModule");
         private static readonly FieldInfo NodeField = ItemType?.GetField("m_Node", BindingFlags.Instance | BindingFlags.NonPublic);
         private static readonly PropertyInfo ViewProperty = ItemType?.GetProperty("View", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         private static readonly PropertyInfo ToggleProperty = ItemType?.GetProperty("Toggle", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -173,23 +173,12 @@ namespace UnityBlenderLike
 
         private static MethodInfo FindViewMethod(string name)
         {
-            Type viewType = FindType("Unity.Hierarchy.HierarchyView");
-            Type nodeType = FindType("Unity.Hierarchy.HierarchyNode");
+            Type viewType = Type.GetType("Unity.Hierarchy.HierarchyView, UnityEngine.HierarchyModule");
+            Type nodeType = Type.GetType("Unity.Hierarchy.HierarchyNode, UnityEngine.HierarchyCoreModule");
             if (viewType == null || nodeType == null)
                 return null;
             return viewType.GetMethod(name, BindingFlags.Instance | BindingFlags.Public, null,
                 new[] { nodeType.MakeByRefType() }, null);
-        }
-
-        private static Type FindType(string fullName)
-        {
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                Type type = assembly.GetType(fullName);
-                if (type != null)
-                    return type;
-            }
-            return null;
         }
     }
 }
