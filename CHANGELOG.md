@@ -1,15 +1,10 @@
 # Changelog
 
-## [Unreleased]
-
-### Added
-
-- Shift while dragging a slider in the Inspector (a material's Range property, for one) moves it at a tenth of the speed, like Blender. Toggle in Preferences > Blender Like.
-
 ## [0.9.0] - 2026-09-26
 
 ### Added
 
+- Shift while dragging a slider in the Inspector (a material's Range property, for one) moves it at a tenth of the speed, like Blender. Toggle in Preferences > Blender Like.
 - Alt + drag on the move gizmo duplicates the selection and moves the copy along the part grabbed, like Unreal. Toggle in Preferences > Blender Like.
 - Shift + X / Y / Z in G / R / S: lock to everything but that axis, as in Blender.
 
