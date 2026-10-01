@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Shift while dragging a slider in the Inspector (a material's Range property, for one) moves it at a tenth of the speed, like Blender. Toggle in Preferences > Blender Like.
+
 ## [0.9.0] - 2026-09-26
 
 ### Added

@@ -21,6 +21,7 @@ namespace UnityBlenderLike
         private const string ZUpTransformInspectorKey = "UnityBlenderLike.ZUpTransformInspector";
         private const string MiddleMouseNavigationKey = "UnityBlenderLike.MiddleMouseNavigation";
         private const string AltDragDuplicateKey = "UnityBlenderLike.AltDragDuplicate";
+        private const string ShiftPrecisionDragKey = "UnityBlenderLike.ShiftPrecisionDrag";
 
         public static AxisConvention Axes
         {
@@ -95,6 +96,13 @@ namespace UnityBlenderLike
             set => EditorUserSettings.SetConfigValue(AltDragDuplicateKey, value.ToString());
         }
 
+        /// <summary>Shift while dragging an Inspector slider moves it at a tenth of the speed, as in Blender.</summary>
+        public static bool ShiftPrecisionDrag
+        {
+            get => EditorUserSettings.GetConfigValue(ShiftPrecisionDragKey) != bool.FalseString;
+            set => EditorUserSettings.SetConfigValue(ShiftPrecisionDragKey, value.ToString());
+        }
+
         public static bool ZUpTransformActive => Axes == AxisConvention.Blender && ZUpTransformInspector;
 
         [SettingsProvider]
@@ -103,7 +111,7 @@ namespace UnityBlenderLike
             return new SettingsProvider("Preferences/Blender Like", SettingsScope.User)
             {
                 label = "Blender Like",
-                keywords = new[] { "Blender", "numpad", "view", "move", "rotate", "scale", "axis", "perspective", "orbit", "pan", "middle mouse", "duplicate", "Z up", "Transform", "Inspector" },
+                keywords = new[] { "Blender", "numpad", "view", "move", "rotate", "scale", "axis", "perspective", "orbit", "pan", "middle mouse", "duplicate", "Z up", "Transform", "Inspector", "slider", "precision" },
                 guiHandler = _ =>
                 {
                     EditorGUIUtility.labelWidth = 160f;
@@ -131,6 +139,9 @@ namespace UnityBlenderLike
                     AltDragDuplicate = EditorGUILayout.Toggle(
                         new GUIContent("Alt + Drag Duplicates", "Alt + drag on the move gizmo's arrows duplicates the selection and moves the copy, like Unreal."),
                         AltDragDuplicate);
+                    ShiftPrecisionDrag = EditorGUILayout.Toggle(
+                        new GUIContent("Shift Precision Drag", "Hold Shift while dragging a slider in the Inspector (a material's Range property, for one) and it moves at a tenth of the speed, as in Blender."),
+                        ShiftPrecisionDrag);
                     EditorGUILayout.HelpBox(
                         "Blender: views and axis locks match Blender for models exported with the default FBX "
                         + "settings. Numpad 7 shows what Blender's top view shows, and Z is up.\n"

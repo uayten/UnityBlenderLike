@@ -10,6 +10,7 @@ Makes the Unity Scene view feel like Blender, as an editor-only package you can 
 - **Blender's middle mouse**: middle drag orbits around the pivot, Shift + middle drag pans
 - **Numpad views**: 1 / 3 / 7 for front, right and top, Ctrl for the opposite side, 5 to toggle orthographic, `.` to frame the selection, / for local view, and Auto Perspective when orbiting
 - **Drag over Hierarchy arrows**: press an expand arrow and drag up or down, and every item you pass opens (or closes) too, like Blender's Outliner
+- **Shift for precision in the Inspector**: hold Shift while dragging a slider, a material's Range property for one, and it moves at a tenth of the speed, like Blender
 - **Z-up Transform Inspector**: Location, Rotation and Scale show and edit the values Blender's N panel shows, with Z up and Blender's XYZ Euler, while the object keeps Unity's own values underneath
 - **Blender's axes**: views and axis locks match models exported from Blender with the default FBX settings, so Numpad 7 shows what Blender's top view shows and R Z turns around the vertical
 - **Nothing in the project**: no scene, asset or setting changes, and it can live outside version control, so your teammates keep stock Unity
@@ -25,6 +26,7 @@ Makes the Unity Scene view feel like Blender, as an editor-only package you can 
 - [Numpad views](#numpad-views)
 - [Z-up Transform Inspector](#z-up-transform-inspector)
 - [Hierarchy](#hierarchy)
+- [Precision drag](#precision-drag)
 - [Settings](#settings)
 - [Conflicts with existing shortcuts](#conflicts-with-existing-shortcuts)
 - [How it works](#how-it-works)
@@ -202,6 +204,12 @@ Alt+click keeps Unity's own behavior (expand or collapse everything under the it
 
 This works with the Hierarchy window of Unity 6 (the one built with UI Toolkit). It finds that window's internals by name, so on Unity versions with the older Hierarchy nothing changes there.
 
+## Precision drag
+
+Hold Shift while dragging a slider in the Inspector, like a material's Range property, and the value changes at a tenth of the mouse's speed, as Shift does on Blender's sliders. Shift can be pressed or released mid-drag: the value stays where it is and goes on at the new speed, so the slider's handle no longer sits under the cursor until you let go.
+
+Drags that already treat Shift their own way, like dragging a number field's label (Unity makes it faster there), aren't affected.
+
 ## Settings
 
 **Edit → Preferences → Blender Like**:
@@ -214,6 +222,7 @@ This works with the Hierarchy window of Unity 6 (the one built with UI Toolkit).
 | **Auto Perspective** (on by default) | Views made orthographic by 1, 3 or 7 go back to perspective when orbited |
 | **Middle Mouse Navigation** (on by default) | [Middle drag orbits, Shift + middle drag pans](#middle-mouse-navigation) |
 | **Alt + Drag Duplicates** (on by default) | [Alt + drag on the move gizmo duplicates](#alt--drag-duplicate) |
+| **Shift Precision Drag** (on by default) | [Shift slows Inspector sliders down](#precision-drag) |
 
 Why Blender needs its own axis setting: a default Blender FBX export brings Blender's +Y to Unity's -Z. Unity's top view puts +Z at the top of the screen, so a plan drawn in Blender shows up upside down in it.
 
@@ -241,6 +250,7 @@ Clear their bindings in **Edit → Shortcuts** (the package covers both with H a
 - Confirming puts every object back where it started, records it for Undo, then applies the final transform, so the whole drag undoes in one step. Shift+D merges the duplicate into that same step.
 - Auto Perspective reads the Scene view's view animation (internal) to tell it apart from an orbit.
 - The Hierarchy drag listens to the Hierarchy window's pointer events before its rows see them, and opens or closes items through the Hierarchy view's expand and collapse methods.
+- The precision drag wraps the GUI of each IMGUI container in the Inspector, so it sees a drag before the controls do. IMGUI sliders take their value from how far the mouse went since the press, so while Shift is held the mouse position they get is a virtual one that advances by a tenth of the real movement.
 - The Z-up Transform Inspector is a custom Inspector for Transform. It converts the values on the way in and out, and draws Unity's own Transform Inspector when it's off.
 
 ## Compatibility
