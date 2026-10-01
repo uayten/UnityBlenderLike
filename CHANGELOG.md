@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.0] - 2026-10-01
+
+### Changed
+
+- X / Y / Z in G / R / S lock first to the space of the Scene view's Global / Local toggle, then to the other one, like Blender's transform orientation. They always started global.
+
 ## [0.9.0] - 2026-09-26
 
 ### Added

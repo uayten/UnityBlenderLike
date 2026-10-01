@@ -3,7 +3,7 @@
 Makes the Unity Scene view feel like Blender, as an editor-only package you can keep to yourself in a shared project:
 
 - **Modal G / R / S**: move, rotate and scale follow the mouse until you click, and rotation follows the cursor around the pivot, full turns included, instead of Unity's gizmo that stops following once you circle the pivot
-- **Axis locks and typed values**: X / Y / Z lock an axis (again for local), Shift + X / Y / Z everything but that axis, type `90` for an exact value, Shift for precision, Ctrl snaps, G / R / S switch mode without confirming, click to confirm, right click to cancel
+- **Axis locks and typed values**: X / Y / Z lock an axis in the space of the Scene view's Global / Local toggle (again for the other one), Shift + X / Y / Z everything but that axis, type `90` for an exact value, Shift for precision, Ctrl snaps, G / R / S switch mode without confirming, click to confirm, right click to cancel
 - **Keys follow the mouse**: with the mouse over the Scene view, every key goes there, even right after clicking in the Hierarchy, like Blender's areas
 - **Alt + drag duplicates**: Alt + drag an arrow of Unity's move gizmo to copy the selection and move the copy along it, like Unreal
 - **Blender's object keys**: H / Shift+H / Alt+H hide and reveal, Alt+G / Alt+R / Alt+S clear transforms, Shift+D duplicates and moves, Ctrl+P / Alt+P parent and unparent, A / Alt+A select all and none
@@ -98,7 +98,7 @@ Select something, point at the Scene view and press G, R or S:
 | Input | Effect |
 |---|---|
 | Move the mouse | Move in the view plane, rotate around the view axis following the cursor angle around the pivot (full turns included), or scale by the distance from the pivot |
-| X / Y / Z | Lock to the global axis; press again for the local axis (of the active object), again to unlock. A line through the pivot, in Unity's color for the axis it runs along, shows the lock |
+| X / Y / Z | Lock to the axis in the space picked in the Scene view's Global / Local toggle; press again for the other space (local is the active object's), again to unlock. As in Blender, where the first press follows the transform orientation. A line through the pivot, in Unity's color for the axis it runs along, shows the lock |
 | Digits, `.`, `-`, Backspace | Type an exact value: meters for move (along X when no axis is locked), degrees for rotate, factor for scale |
 | G / R / S | Switch to another transform, keeping what the previous one did |
 | Shift + X / Y / Z | Lock to everything but that axis, as in Blender: G moves on the plane of the other two (Shift+Z moves over the floor with Blender axes), S scales the other two, R turns around that axis. Again for the local plane, again to unlock |

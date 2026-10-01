@@ -12,8 +12,8 @@ namespace UnityBlenderLike
     /// selection, following the mouse until a click confirms. Rotation follows the cursor angle
     /// around the pivot, full turns included (the built-in rotate gizmo projects the drag onto a
     /// fixed tangent, so it can't follow the mouse around the pivot).
-    /// While transforming: G / R / S switch mode keeping what was done, X / Y / Z lock to a global
-    /// axis (press again for local, again to free it), Shift + X / Y / Z to everything but that
+    /// While transforming: G / R / S switch mode keeping what was done, X / Y / Z lock to an axis
+    /// in the space of the Global / Local toggle (press again for the other space, again to free it), Shift + X / Y / Z to everything but that
     /// axis, digits type an exact value, Shift slows the
     /// mouse down for precision, Ctrl snaps, left
     /// click or Enter confirms as one undo step, right click or Esc cancels. Global axes follow the
@@ -484,13 +484,19 @@ namespace UnityBlenderLike
             return true;
         }
 
+        /// <summary>
+        /// First press locks to the space of the Scene view's Global / Local toggle, the next one to
+        /// the other space, the third frees the axis, like Blender's transform orientation.
+        /// </summary>
         /// <param name="plane">Shift was held: lock to everything but this axis.</param>
         private static void CycleAxis(int index, bool plane)
         {
+            AxisSpace first = Tools.pivotRotation == PivotRotation.Local ? AxisSpace.Local : AxisSpace.Global;
+            AxisSpace second = first == AxisSpace.Local ? AxisSpace.Global : AxisSpace.Local;
             if (axisSpace == AxisSpace.Free || axisSpace == AxisSpace.Gizmo || axisIndex != index || planeLock != plane)
-                axisSpace = AxisSpace.Global;
-            else if (axisSpace == AxisSpace.Global)
-                axisSpace = AxisSpace.Local;
+                axisSpace = first;
+            else if (axisSpace == first)
+                axisSpace = second;
             else
                 axisSpace = AxisSpace.Free;
             axisIndex = index;
