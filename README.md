@@ -1,3 +1,5 @@
+[Português](README.pt-BR.md) · **English**
+
 # UnityBlenderLike
 
 Makes the Unity Scene view feel like Blender, as an editor-only package you can keep to yourself in a shared project:
@@ -13,7 +15,8 @@ Makes the Unity Scene view feel like Blender, as an editor-only package you can 
 - **Shift for precision in the Inspector**: hold Shift while dragging a slider, a material's Range property for one, and it moves at a tenth of the speed, like Blender
 - **Z-up Transform Inspector**: Location, Rotation and Scale show and edit the values Blender's N panel shows, with Z up and Blender's XYZ Euler, while the object keeps Unity's own values underneath
 - **Blender's axes**: views and axis locks match models exported from Blender with the default FBX settings, so Numpad 7 shows what Blender's top view shows and R Z turns around the vertical
-- **Nothing in the project**: no scene, asset or setting changes, and it can live outside version control, so your teammates keep stock Unity
+- **Blender Look**: one click lights a URP scene like Blender's EEVEE from the same HDRI, so models look the same in both
+- **Nothing in the project**: no scene, asset or setting changes, and it can live outside version control, so your teammates keep stock Unity. Blender Look is the one exception, and only when you run it: what it sets up lives in the project, so teammates get it without the package
 
 ## Contents
 
@@ -27,6 +30,7 @@ Makes the Unity Scene view feel like Blender, as an editor-only package you can 
 - [Z-up Transform Inspector](#z-up-transform-inspector)
 - [Hierarchy](#hierarchy)
 - [Precision drag](#precision-drag)
+- [Blender Look](#blender-look)
 - [Settings](#settings)
 - [Conflicts with existing shortcuts](#conflicts-with-existing-shortcuts)
 - [How it works](#how-it-works)
@@ -210,6 +214,25 @@ Hold Shift while dragging a slider in the Inspector, like a material's Range pro
 
 Drags that already treat Shift their own way, like dragging a number field's label (Unity makes it faster there), aren't affected.
 
+## Blender Look
+
+**Window → Blender Like → Blender Look** sets up the active scene so a model lit by an HDRI looks the same in Unity as in Blender's EEVEE, Material Preview included, with the Standard view transform. Pick the same `.exr` or `.hdr` as Blender's world, imported as a Cubemap, and press **Apply to Active Scene**. It opens filled in with the scene's own skybox, so running it again updates that skybox in place.
+
+What it changes, all in the project, where teammates get it without the package:
+
+| Part | Why |
+|---|---|
+| A copy of the HDRI clamped at the sun threshold (`<name>_eevee.exr`, next to the source), on a Skybox/Cubemap material with Tint 0.5 and Rotation 90 | EEVEE turns every pixel brighter than World → Sun → Threshold into a sun light and lights with the rest. Skybox/Cubemap doubles its Tint, so 0.5 keeps the HDRI's own brightness, and Rotation 90 lines it up with Blender's world for default FBX exports |
+| A directional light with the energy the clamp took out, from the direction it came from, shadows off like EEVEE's default | That's EEVEE's sun. The scene's directional light is reused if it has one |
+| `AmbientProbeL1.cs`, a script added to `Assets/BlenderLook/` unless the project already has one | EEVEE lights diffuse surfaces from L1 spherical harmonics, Unity's ambient probe uses L2, which darkens everything facing down. The script drops the L2 band whenever Unity loads the probe, in the Editor and in builds |
+| Tonemapping None and Vignette 0 in the URP asset's Volume Profile | Blender's Standard view transform. Volumes in the scene that set their own tonemapping are listed after applying |
+| The renderer's SSAO set to a small radius | EEVEE only darkens small gaps. A radius close to the model's size darkens a whole side; about an eighth of the models' height works |
+| Generate Lighting | The ambient light and reflections only update when the lighting is baked |
+
+It works with any HDRI: the clamp, the sun's energy and its direction are worked out from the file itself. Exposure starts at 0.95, which matched EEVEE in side-by-side renders of the same model with three of Blender's HDRIs (forest, sunset and studio). Strength is the world's Background Strength in Blender. Blender's Material Preview turns the HDRI with the view unless **World Space Lighting** is on in the viewport's shading menu, so turn it on before comparing angles.
+
+Needs URP 17 (Unity 6) or newer; in other projects the window doesn't appear.
+
 ## Settings
 
 **Edit → Preferences → Blender Like**:
@@ -241,7 +264,7 @@ Clear their bindings in **Edit → Shortcuts** (the package covers both with H a
 
 ## How it works
 
-- The package is one editor assembly (`UnityBlenderLike.Editor`). Nothing runs in builds or at runtime, and no scene or asset refers to it.
+- The package is one editor assembly (`UnityBlenderLike.Editor`), plus `UnityBlenderLike.Editor.BlenderLook`, which only compiles with URP 17 or newer. Nothing runs in builds or at runtime, and no scene or asset refers to it. Blender Look writes its runtime script into the project as plain source, so builds don't need the package.
 - The keys are regular Shortcut Manager shortcuts in the Scene view context, so they show and rebind in **Edit → Shortcuts**.
 - While a modal transform runs, it reads the keys before any shortcut: from the Scene view's UI Toolkit panel, which is where Unity 6.6 delivers them, and from a handler ahead of the Shortcut Manager, for versions that deliver them the IMGUI way. Both are removed when the transform ends.
 - Alt + drag duplicate works out which part of the move gizmo is under the mouse on every Scene view event, and takes the Alt + press from the Scene view's panel before Unity's Alt + drag Orbit shortcut sees it. The drag is the package's own move, locked like the gizmo part.

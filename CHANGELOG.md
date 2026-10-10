@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Blender Look (Window → Blender Like → Blender Look): sets up a URP scene to light like Blender's EEVEE from the same HDRI. It clamps the HDRI at the sun threshold and turns what it took out into a directional light, drops the L2 band of the ambient probe through a script it adds to the project, and sets the Standard view transform, a small SSAO radius and the lighting bake. Needs URP 17 or newer.
+
 ## [1.0.0] - 2026-10-01
 
 ### Changed
